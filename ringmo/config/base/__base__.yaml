@@ -1,0 +1,13 @@
+seed: 2022
+use_parallel: True
+profile: False
+
+# performance optimization
+auto_tune: False  # dataset performance
+filepath_prefix:
+autotune_per_step: 10
+
+aicc_config:
+  obs_path: "Input your obs path if code is running on modelarts else invalid."
+  upload_frequence: 1
+  keep_last: False
