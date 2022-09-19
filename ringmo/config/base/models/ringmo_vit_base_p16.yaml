@@ -1,0 +1,24 @@
+# model config
+arch: 'ringmo'
+model:
+    backbone: 'vit'
+    patch_type: 'pi_conv'
+    mask_ratio: 0.6
+    inside_ratio: 0.6
+    mask_patch_size: 32
+    patch_size: 16
+    in_chans: 3
+    embed_dim: 768
+    depth: 12
+    num_heads: 12
+    mlp_ratio: 4
+    drop_rate: 0.
+    drop_path_rate: 0.1
+    init_values: 0.1
+    predictor_layer: True
+    use_abs_pos_emb: False
+    use_rel_pos_bias: False  # if set window size, it's True
+    use_shared_rel_pos_bias: True  # if set window size, it's True
+    use_mean_pooling: False
+    norm_pixel_loss: True
+    use_lbp: False
