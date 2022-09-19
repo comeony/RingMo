@@ -1,0 +1,15 @@
+model:
+    backbone: 'swin'
+    patch_size: 4
+    in_chans: 3
+    embed_dim: 96
+    depth: [2, 2, 6, 2]
+    num_heads: [3, 6, 12, 24]
+    window_size: 7
+    mlp_ratio: 4
+    qkv_bias: True
+    qk_scale:
+    drop_rate: 0.
+    drop_path_rate: 0.1
+    ape: False
+    patch_norm: True

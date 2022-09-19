@@ -1,0 +1,39 @@
+# train config
+train_config:
+    epoch: 100
+    batch_size: 64
+    image_size: 224
+    sink_mode: True
+    per_epoch_size: 0
+    initial_epoch: 0
+    has_trained_epoches: 0
+    has_trained_steps: 0
+    resume_ckpt:
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        save_ckpt_epochs: 1
+        keep_checkpoint_max: 1
+        integrated_save: True
+        async_save: False
+        prefix: "ring-mo"
+    # summary callback
+    summary_config:  # loss \ net parameter
+        collect_freq: 10
+        collect_tensor_freq: 20
+        keep_default_action: True
+        collect_specified_data:
+            collect_metric: False
+            collect_graph: True
+            collect_dataset_graph: False
+            collect_landscape:
+
+train_wrapper:
+  wrapper_type:
+  use_dynamic_loss_scale: False
+  loss_scale: 1024
+  use_ema: False
+  ema_decay: 0.9999
+  use_clip_grad: True
+  clip_norm: 5.0
