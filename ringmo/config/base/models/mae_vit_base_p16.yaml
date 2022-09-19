@@ -1,0 +1,21 @@
+# model config
+arch: 'mae'
+model:
+    backbone: 'vit'
+    mask_ratio: 0.75
+    patch_size: 16
+    in_chans: 3
+    embed_dim: 768
+    depth: 12
+    num_heads: 12
+    mlp_ratio: 4
+    drop_rate: 0.
+    drop_path_rate: 0.
+    init_values: 0.
+    use_abs_pos_emb: True
+    use_rel_pos_bias: False  # if set window size, it's True
+    use_shared_rel_pos_bias: False  # if set window size, it's True
+    decoder_layers: 8
+    decoder_num_heads: 16
+    decoder_dim: 512
+    norm_pixel_loss: True

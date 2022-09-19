@@ -1,0 +1,16 @@
+# pretrain dataset default setting
+pretrain_dataset:
+    data_type: "mindrecord"
+    data_path: "your mindrecord path"
+    image_ids: "your file with image id"
+    num_workers: 8
+    crop_min: 0.67
+    prop: 0.5
+    shuffle: True
+    repeat: 1
+    prefetch_size: 30
+    numa_enable: True
+    python_multiprocessing: False
+    input_columns: [ "image" ]
+    output_columns: [ "image", "mask" ]
+    column_order: [ "image", "mask" ]

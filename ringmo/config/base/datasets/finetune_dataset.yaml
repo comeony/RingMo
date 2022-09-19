@@ -1,0 +1,29 @@
+# finetune dataset default setting
+finetune_dataset:
+    train_path: "Only Support ImageNet Format Type Path"
+    eval_path: "Only Support ImageNet Format Type Path"
+    eval_interval: 1
+    eval_offset: -1
+    num_workers: 8
+    prefetch_size: 30
+    numa_enable: True
+    interpolation: "BICUBIC"
+    auto_augment: "rand-m9-mstd0.5-inc1"
+    crop_min: 0.08
+    hflip: 0.5
+    mixup: 0.8
+    cutmix: 1.0
+    mixup_prob: 1.0
+    switch_prob: 0.5
+    re_prop: 0.25
+    re_mode: 'pixel'
+    re_count: 1
+    label_smoothing: 0.1
+    color_jitter: 0.4 # not used in simmim default settings.
+    shuffle: True
+    repeat: 1
+    python_multiprocessing: True
+    samples_num: 25200 # 50000 for imagenet, 25200 for nwpu， 5000 for aid_test.
+    input_columns: [ "image", "label" ]
+    output_columns: [ "image", "label" ]
+    column_order: [ "image", "label" ]
