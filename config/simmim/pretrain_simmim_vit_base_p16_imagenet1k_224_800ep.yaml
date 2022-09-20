@@ -8,7 +8,7 @@ base_config: [
   '../base/__base__.yaml']
 
 arch: "simmim"
-use_parallel: False
+use_parallel: True
 profile: False
 auto_tune: True  # dataset performance
 filepath_prefix: "./autotune"
