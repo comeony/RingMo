@@ -20,10 +20,10 @@ import aicc_tools as ac
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint
 
-from mscv.datasets import build_dataset
-from mscv.tools.helper import str2bool, build_context
-from mscv.models import build_model, build_eval_engine
-from mscv.parallel_config import build_parallel_config
+from ringmo_framework.datasets import build_dataset
+from ringmo_framework.tools.helper import str2bool, build_context
+from ringmo_framework.models import build_model, build_eval_engine
+from ringmo_framework.parallel_config import build_parallel_config
 from register.config import RingMoConfig
 
 

@@ -34,7 +34,7 @@ RingMo-Framework 是由华为大模型研发团队与中科院空天信息创新
   python pretrain.py --config CONFIG_PATH --use_parallel False
   # 分布式训练
   cd ringmo-framework/
-  python mscv/tools/hccl_tools.py --device_num [0,8] # 生成分布式训练所需的RANK_TABLE_FILE，后面可跳过
+  python ringmo_framework/tools/hccl_tools.py --device_num [0,8] # 生成分布式训练所需的RANK_TABLE_FILE，后面可跳过
   cd scripts
   sh pretrain_distribute.sh RANK_TABILE_FILE CONFIG_FILE # 执行分布式预训练
   ```

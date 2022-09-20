@@ -20,16 +20,16 @@ import aicc_tools as ac
 from mindspore import nn
 from mindspore.train.model import Model
 
-from mscv.lr import build_lr
-from mscv.loss import build_loss
-from mscv.optim import build_optim
-from mscv.trainer import build_wrapper
-from mscv.datasets import build_dataset
-from mscv.tools.load_ckpt import load_ckpt
-from mscv.tools.helper import str2bool, build_context
-from mscv.models import build_model, build_eval_engine
-from mscv.parallel_config import build_parallel_config
-from mscv.monitors.callback import build_finetune_callback
+from ringmo_framework.lr import build_lr
+from ringmo_framework.loss import build_loss
+from ringmo_framework.optim import build_optim
+from ringmo_framework.trainer import build_wrapper
+from ringmo_framework.datasets import build_dataset
+from ringmo_framework.tools.load_ckpt import load_ckpt
+from ringmo_framework.tools.helper import str2bool, build_context
+from ringmo_framework.models import build_model, build_eval_engine
+from ringmo_framework.parallel_config import build_parallel_config
+from ringmo_framework.monitors.callback import build_finetune_callback
 from register.config import RingMoConfig, ActionDict
 
 
