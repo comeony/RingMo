@@ -92,7 +92,8 @@ class VisionTransformerForRingMo(Vit):
             x = self.encoder(x, self.encoder_input_mask)
         x = self.norm(x)
         x = self.slice(x, (0, 1, 0), (batch, seq, channel))  # x = x[:, 1:]
-        x = self.reshape(self.transpose(x, (0, 2, 1)), (x.shape[0], x.shape[1], self.hw, self.hw))
+        x = self.transpose(x, (0, 2, 1))
+        x = self.reshape(x, (x.shape[0], x.shape[1], self.hw, self.hw))
         return x
 
 

@@ -41,7 +41,7 @@ class PatchEmbed(nn.Cell):
         self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
         self.num_patches = self.grid_size[0] * self.grid_size[1]
 
-        self.projection = build_projection(in_features, out_features, patch_size,
+        self.projection = build_projection(in_features, out_features, patch_size[0],
                                            parallel_config, proj_type=patch_type)
         self.reshape = P.Reshape()
         self.transpose = P.Transpose().shard(((dp, 1, 1),))
