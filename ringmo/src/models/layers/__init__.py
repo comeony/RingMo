@@ -1,3 +1,4 @@
+"""layers of ringmo"""
 from ringmo.src.models.layers.layers import Dropout, Identity, \
     LayerNorm, Linear, DropPath
 from ringmo.src.models.layers.attention import Attention, WindowAttention

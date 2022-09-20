@@ -1,2 +1,3 @@
-from src.models.eval.eval_engine import BasicEvalEngine, EvelEngine
-from src.models.eval.metric import DistAccuracy, ClassifyCorrect, ClassifyCorrectForDPMode
+"""eval of ringmo"""
+from ringmo.src.models.eval.eval_engine import BasicEvalEngine, EvelEngine
+from ringmo.src.models.eval.metric import DistAccuracy, ClassifyCorrect, ClassifyCorrectForDPMode
