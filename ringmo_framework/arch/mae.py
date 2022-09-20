@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""MAE of ringmo"""
+"""MAE of ringmo-framework"""
 from mindspore import nn
 import mindspore.numpy as np
 from mindspore import Tensor
@@ -21,8 +21,8 @@ from mindspore import dtype as mstype
 from mindspore.common.parameter import Parameter
 import mindspore.common.initializer as weight_init
 
-from ringmo_framework.models.backbone.vit import Vit
 from ringmo_framework.loss.loss import MSELoss
+from ringmo_framework.models.backbone.vit import Vit
 from ringmo_framework.models.layers.patch import Patchify, UnPatchify
 from ringmo_framework.models.layers.layers import LayerNorm, Linear
 from ringmo_framework.models.layers.vision_transformer import VisionTransformer
@@ -218,7 +218,7 @@ class Mae(nn.Cell):
         # tokens encoder
         mask = self.gather1(mask, 1, ids_restore)
 
-        encoder_tokens, aux_loss = self.encoder(imgs, unmask_index)
+        encoder_tokens = self.encoder(imgs, unmask_index)
         patches = self.patchify(imgs)
 
         # project encoder to decoder dimensions,
@@ -262,10 +262,23 @@ class Mae(nn.Cell):
         self.images_summary("reconstruct image", reconstruct_image)
 
         mae_loss = self.mse_loss(pred, patches, mask)
-        if aux_loss:
-            mae_loss = self.add2(mae_loss, aux_loss)
 
         return mae_loss
+
+
+def mae_vit_base_p16(**kwargs):
+    encoder = VisionTransformerForMae(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, **kwargs)
+    return Mae(encoder=encoder, decoder_layers=8, decoder_num_heads=16, decoder_dim=512)
+
+
+def mae_vit_large_p16(**kwargs):
+    encoder = VisionTransformerForMae(patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, **kwargs)
+    return Mae(encoder=encoder, decoder_layers=8, decoder_num_heads=16, decoder_dim=512)
+
+
+def mae_vit_huge_p14(**kwargs):
+    encoder = VisionTransformerForMae(patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, **kwargs)
+    return Mae(encoder=encoder, decoder_layers=8, decoder_num_heads=16, decoder_dim=512)
 
 
 def build_mae(config):

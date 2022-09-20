@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""simmim of ringmo"""
+"""simmim of ringmo-framework"""
 from mindspore import nn
 from mindspore import ops as P
 from mindspore import dtype as mstype
 from mindspore.common.parameter import Parameter
 import mindspore.common.initializer as weight_init
 
-from ringmo_framework.models.backbone.swin_transformer import SwinTransformer
+from ringmo_framework.loss.loss import L1Loss
 from ringmo_framework.models.backbone.vit import Vit
+from ringmo_framework.models.backbone.swin_transformer import SwinTransformer
 
 
 class SwinTransformerForSimMIM(SwinTransformer):
@@ -206,6 +207,44 @@ class SimMIM(nn.Cell):
         if hasattr(self.encoder, 'no_weight_decay_keywords'):
             return {'encoder.' + i for i in self.encoder.no_weight_decay_keywords()}
         return {}
+
+
+def simmim_vit_base_p16(**kwargs):
+    encoder = VisionTransformerForSimMIM(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=16)
+
+
+def simmim_vit_large_p16(**kwargs):
+    encoder = VisionTransformerForSimMIM(patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=16)
+
+
+def simmim_swin_tiny_p4_w6(**kwargs):
+    encoder = SwinTransformerForSimMIM(
+        image_size=192, patch_size=4, embed_dim=96, depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24], window_size=6, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=32)
+
+
+def simmim_swin_tiny_p4_w7(**kwargs):
+    encoder = SwinTransformerForSimMIM(
+        image_size=224, patch_size=4, embed_dim=96, depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24], window_size=6, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=32)
+
+
+def simmim_swin_base_p4_w6(**kwargs):
+    encoder = SwinTransformerForSimMIM(
+        image_size=192, patch_size=4, embed_dim=128, depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32], window_size=6, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=32)
+
+
+def simmim_swin_base_p4_w7(**kwargs):
+    encoder = SwinTransformerForSimMIM(
+        image_size=224, patch_size=4, embed_dim=128, depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32], window_size=7, mlp_ratio=4, **kwargs)
+    return SimMIM(encoder=encoder, encoder_stride=32)
 
 
 def build_simmim(config):

@@ -232,8 +232,8 @@ def vit_large_p16(**kwargs):
     return Vit(patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, **kwargs)
 
 
-def vit_huge_p16(**kwargs):
-    return Vit(patch_size=16, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, **kwargs)
+def vit_huge_p14(**kwargs):
+    return Vit(patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, **kwargs)
 
 
 def build_vit(config):
