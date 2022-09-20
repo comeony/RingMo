@@ -155,7 +155,7 @@ class Vit(nn.Cell):
                     cell.bias.set_data(weight_init.initializer(weight_init.Zero(),
                                                                cell.bias.shape,
                                                                cell.bias.dtype))
-            elif isinstance(cell, LayerNorm, nn.LayerNorm):
+            elif isinstance(cell, LayerNorm):
                 cell.gamma.set_data(weight_init.initializer(weight_init.One(),
                                                             cell.gamma.shape,
                                                             cell.gamma.dtype))
