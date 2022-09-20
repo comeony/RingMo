@@ -1,16 +1,30 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""eval of ringmo"""
 import os
 import argparse
 
-import aicc_tools as ac
-
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint
+import aicc_tools as ac
 
 from src.datasets import build_dataset
-from register.config import RingMoConfig
 from src.tools.helper import str2bool, build_context
 from src.models import build_model, build_eval_engine
 from src.parallel_config import build_parallel_config
+from register.config import RingMoConfig
 
 
 @ac.aicc_monitor

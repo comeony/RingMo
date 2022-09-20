@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""cut image"""
 import os
 
 from PIL import Image
@@ -10,10 +25,11 @@ image_ids = 0
 
 
 class CutImage:
+    """cut image class"""
     def __init__(self, root_path, save_dir):
         """Loading image files as a dataset generator."""
         img_path = []
-        for root, ds, fs in os.walk(root_path):
+        for root, _, fs in os.walk(root_path):
             for f in fs:
                 if f.endswith('.png') or f.endswith(".jpg") or f.endswith(".tif"):
                     img_path.append(os.path.join(root, f))
@@ -28,13 +44,14 @@ class CutImage:
         image_ids += int(img.size[0] / w) * int(img.size[1] / h) * 4
         cur_img_name = self.img_path[index].split('/')[-1]
         cut_save_img(img, w, h, self.save_dir, cur_img_name)
-        return np.array([0]),
+        return (np.array([0]),)
 
     def __len__(self):
         return len(self.img_path)
 
 
 def cut_save_img(img, dw, dh, save_path, img_name):
+    """cut save image"""
     w, h = img.size
 
     w_nums = int(w / dw) * 2

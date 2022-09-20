@@ -14,7 +14,7 @@
 # ============================================================================
 """ema define"""
 
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore.ops import composite as C
@@ -22,14 +22,14 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 
 _ema_op = C.MultitypeFuncGraph("grad_ema_op")
-Assign = P.Assign()
-AssignAdd = P.AssignAdd()
+_assign = P.Assign()
+_assign_add = P.AssignAdd()
 
 
 @_ema_op.register("Tensor", "Tensor", "Tensor")
 def _ema_weights(factor, ema_weight, weight):
     """Apply grad sum to cumulative gradient."""
-    return AssignAdd(ema_weight, ema_weight * factor + weight * (1 - factor))
+    return _assign_add(ema_weight, ema_weight * factor + weight * (1 - factor))
 
 
 class EMACell(nn.Cell):
