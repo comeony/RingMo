@@ -30,7 +30,7 @@ import random
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
 
-import mindspore.dataset.transforms.py_transforms as py_transforms
+from mindspore.dataset.transforms import py_transforms
 
 
 class ImageNetPolicyV2(py_transforms.PyTensorOperation):

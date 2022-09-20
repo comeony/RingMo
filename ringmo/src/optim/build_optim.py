@@ -1,20 +1,35 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""build optim"""
 import json
 from functools import partial
 
 from mindspore import nn
 
-from .optimizer import AdamWeightDecayOp
 from ringmo.src.lr.lr_schedule import LearningRateWiseLayer
+from .optimizer import AdamWeightDecayOp
 
 
 def build_optim(config, model, lr, logger, is_pretrain=True):
     if is_pretrain:
         return build_pretrain_optimizer(config, model, lr, logger)
-    else:
-        return build_finetune_optimizer(config, model, lr, logger)
+    return build_finetune_optimizer(config, model, lr, logger)
 
 
 def build_pretrain_optimizer(config, model, lr, logger):
+    """build pretrain optimizer"""
     logger.info('>>>>>>>>>> Build Optimizer for Pre-training Stage')
     optimizer_config = config.optimizer
     skip = {}
@@ -52,6 +67,7 @@ def build_pretrain_optimizer(config, model, lr, logger):
 
 
 def build_finetune_optimizer(config, model, lr, logger):
+    """build finetune optimizer"""
     logger.info('>>>>>>>>>> Build Optimizer for Fine-tuning Stage')
     optimizer_config = config.optimizer
     if config.model.backbone == 'swin':
@@ -105,6 +121,7 @@ def build_finetune_optimizer(config, model, lr, logger):
 
 
 def get_pretrain_param_groups(config, model, logger, skip_list=(), skip_keywords=()):
+    """get pretrain param groups"""
     has_decay = []
     no_decay = []
     has_decay_name = []
@@ -127,6 +144,7 @@ def get_pretrain_param_groups(config, model, logger, skip_list=(), skip_keywords
 
 def get_finetune_param_groups(model, base_lr, weight_decay, get_layer_func, scales, logger,
                               skip_list=(), skip_keywords=()):
+    """get finetune param groups"""
     parameter_group_names = {}
     parameter_group_vars = {}
 
@@ -169,33 +187,33 @@ def get_finetune_param_groups(model, base_lr, weight_decay, get_layer_func, scal
 
 
 def get_vit_layer(name, num_layers):
+    """get vit layer"""
     if name in ("encoder.cls_tokens", "encoder.mask_token", "encoder.pos_embed"):
         return 0
-    elif name.startswith("encoder.patch_embed"):
+    if name.startswith("encoder.patch_embed"):
         return 0
-    elif name.startswith("encoder.rel_pos_bias"):
+    if name.startswith("encoder.rel_pos_bias"):
         return num_layers - 1
-    elif name.startswith("encoder.encoder.blocks"):
+    if name.startswith("encoder.encoder.blocks"):
         layer_id = int(name.split('.')[3])
         return layer_id + 1
-    else:
-        return num_layers - 1
+    return num_layers - 1
 
 
 def get_swin_layer(name, num_layers, depths):
+    """get swin layer"""
     if name in ("encoder.mask_token",):
         return 0
-    elif name.startswith("encoder.patch_embed"):
+    if name.startswith("encoder.patch_embed"):
         return 0
-    elif name.startswith("encoder.layers"):
+    if name.startswith("encoder.layers"):
         layer_id = int(name.split('.')[2])
         block_id = name.split('.')[4]
-        if block_id == 'reduction' or block_id == 'norm':
+        if block_id in ('reduction', 'norm'):
             return sum(depths[:layer_id + 1])
         layer_id = sum(depths[:layer_id]) + int(block_id)
         return layer_id + 1
-    else:
-        return num_layers - 1
+    return num_layers - 1
 
 
 def check_keywords_in_name(name, keywords=()):

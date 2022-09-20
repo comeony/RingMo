@@ -1,11 +1,26 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""attention layer"""
 from mindspore import nn, Tensor, context
 import mindspore.common.dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.nn.transformer.op_parallel_config import default_dpmp_config
 
-from .layers import Linear, Dropout
 from ringmo.src.models.core.relative_pos_bias import RelativePositionBias, RelativePositionBiasForSwin
+from .layers import Linear, Dropout
 
 
 class Attention(nn.transformer.transformer.MultiHeadAttention):
@@ -105,6 +120,7 @@ class Attention(nn.transformer.transformer.MultiHeadAttention):
 
     def construct(self, query_tensor, key_tensor, value_tensor, attention_mask, key_past=None,
                   value_past=None, batch_valid_length=None, rel_pos_bias=None):
+        """construct of attention"""
         self._check_inputs(query_tensor, key_tensor, value_tensor, attention_mask, key_past,
                            value_past, batch_valid_length)
         query_tensor, key_tensor, value_tensor, batch_size, ori_shape = self._convert_to_2d_tensor(query_tensor,

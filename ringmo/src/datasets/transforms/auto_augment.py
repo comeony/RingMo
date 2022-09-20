@@ -24,9 +24,9 @@ AugMix adapted from:
     https://github.com/google-research/augmix
 
 Papers:
-    AutoAugment: Learning Augmentation Policies from Data - https://arxiv.org/abs/1805.09501
-    Learning Data Augmentation Strategies for Object Detection - https://arxiv.org/abs/1906.11172
-    RandAugment: Practical automated data augmentation... - https://arxiv.org/abs/1909.13719
+    AutoAugment: Learning Augmentation Policies from Data - https://arxiv.org/abs/1805.09501.
+    Learning Data Augmentation Strategies for Object Detection - https://arxiv.org/abs/1906.11172.
+    RandAugment: Practical automated data augmentation... - https://arxiv.org/abs/1909.13719.
     AugMix: A Simple Data Processing Method to Improve Robustness and Uncertainty - https://arxiv.org/abs/1912.02781
 
 Hacked together by / Copyright 2020 Ross Wightman
@@ -38,6 +38,7 @@ import re
 import numpy as np
 import PIL
 from PIL import Image, ImageOps, ImageEnhance
+
 
 _PIL_VER = tuple([int(x) for x in PIL.__version__.split('.')[:2]])
 
@@ -226,7 +227,7 @@ def _randomly_negate(v):
     return -v if random.random() > 0.5 else v
 
 
-def _rotate_level_to_arg(level, _hparams):
+def _rotate_level_to_arg(level):
     """_randomly_negate"""
     # range [-30, 30]
     level = (level / _MAX_LEVEL) * 30.
@@ -234,13 +235,13 @@ def _rotate_level_to_arg(level, _hparams):
     return (level,)
 
 
-def _enhance_level_to_arg(level, _hparams):
+def _enhance_level_to_arg(level):
     """_enhance_level_to_arg"""
     # range [0.1, 1.9]
     return ((level / _MAX_LEVEL) * 1.8 + 0.1,)
 
 
-def _enhance_increasing_level_to_arg(level, _hparams):
+def _enhance_increasing_level_to_arg(level):
     """_enhance_increasing_level_to_arg"""
     # the 'no change' level is 1.0, moving away from that towards 0. or 2.0 increases the enhancement blend
     # range [0.1, 1.9]
@@ -249,7 +250,7 @@ def _enhance_increasing_level_to_arg(level, _hparams):
     return (level,)
 
 
-def _shear_level_to_arg(level, _hparams):
+def _shear_level_to_arg(level):
     """_shear_level_to_arg"""
     # range [-0.3, 0.3]
     level = (level / _MAX_LEVEL) * 0.3
@@ -274,7 +275,8 @@ def _translate_rel_level_to_arg(level, hparams):
     return (level,)
 
 
-def _posterize_level_to_arg(level, _hparams):
+def _posterize_level_to_arg(level, hparams):
+    # pylint: disable=W0613
     """_posterize_level_to_arg"""
     # As per Tensorflow TPU EfficientNet impl
     # range [0, 4], 'keep 0 up to 4 MSB of original image'
@@ -290,7 +292,7 @@ def _posterize_increasing_level_to_arg(level, hparams):
     return (4 - _posterize_level_to_arg(level, hparams)[0],)
 
 
-def _posterize_original_level_to_arg(level, _hparams):
+def _posterize_original_level_to_arg(level):
     """_posterize_original_level_to_arg"""
     # As per original AutoAugment paper description
     # range [4, 8], 'keep 4 up to 8 MSB of image'
@@ -298,21 +300,22 @@ def _posterize_original_level_to_arg(level, _hparams):
     return (int((level / _MAX_LEVEL) * 4) + 4,)
 
 
-def _solarize_level_to_arg(level, _hparams):
+def _solarize_level_to_arg(level, hparams):
+    # pylint: disable=W0613
     """_solarize_level_to_arg"""
     # range [0, 256]
     # intensity/severity of augmentation decreases with level
     return (int((level / _MAX_LEVEL) * 256),)
 
 
-def _solarize_increasing_level_to_arg(level, _hparams):
+def _solarize_increasing_level_to_arg(level, hparams):
     """_solarize_increasing_level_to_arg"""
     # range [0, 256]
     # intensity/severity of augmentation increases with level
-    return (256 - _solarize_level_to_arg(level, _hparams)[0],)
+    return (256 - _solarize_level_to_arg(level, hparams)[0],)
 
 
-def _solarize_add_level_to_arg(level, _hparams):
+def _solarize_add_level_to_arg(level):
     """_solarize_add_level_to_arg"""
     # range [0, 110]
     return (int((level / _MAX_LEVEL) * 110),)
@@ -482,7 +485,7 @@ def auto_augment_policy_v0r(hparams):
 
 def auto_augment_policy_original(hparams):
     """auto_augment_policy_original"""
-    # ImageNet policy from https://arxiv.org/abs/1805.09501
+    # ImageNet policy from https://arxiv.org/abs/1805.09501.
     policy = [
         [('PosterizeOriginal', 0.4, 8), ('Rotate', 0.6, 9)],
         [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
@@ -781,7 +784,7 @@ def augmix_ops(magnitude=10, hparams=None, transforms=None):
 
 class AugMixAugment:
     """ AugMix Transform
-    Adapted and improved from impl here: https://github.com/google-research/augmix/blob/master/imagenet.py
+    Adapted and improved from impl here: https://github.com/google-research/augmix/blob/master/imagenet.py.
     From paper: 'AugMix: A Simple Data Processing Method to Improve Robustness and Uncertainty -
     https://arxiv.org/abs/1912.02781
     """

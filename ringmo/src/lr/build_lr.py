@@ -1,8 +1,24 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""build lr"""
 from ringmo.src.lr.lr_schedule import CosineDecayLR, WarmUpLR, \
     WarmUpCosineDecayV2, WarmUpCosineDecayV1, WarmUpMultiStepDecay
 
 
 def build_lr(config):
+    """build lr"""
     lr_config = config.lr_schedule
     device_num = config.device_num
     batch_size = config.train_config.batch_size
@@ -36,7 +52,7 @@ def build_lr(config):
 
 
 def _check_lr_config(config, device_num=1, batch_size=128, arch="simmim"):
-    if arch == 'simmim' or arch == "ringmo" or arch == "ringmo_mm":
+    if arch in ('simmim', "ringmo", "ringmo_mm"):
         config.base_lr = (config.base_lr * device_num * batch_size) / 512
         config.min_lr = (config.min_lr * device_num * batch_size) / 512
         config.warmup_lr = (config.warmup_lr * device_num * batch_size) / 512

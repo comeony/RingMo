@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""block of ringmo"""
 import numpy as np
 
 from mindspore import nn, Parameter, Tensor
@@ -25,9 +40,9 @@ def window_partition(x, window_size):
     Returns:
         windows: (num_windows*B, window_size, window_size, C)
     """
-    B, H, W, C = x.shape
-    x = np.reshape(x, (B, H // window_size, window_size, W // window_size, window_size, C))
-    windows = x.transpose(0, 1, 3, 2, 4, 5).reshape(-1, window_size, window_size, C)
+    b, h, w, c = x.shape
+    x = np.reshape(x, (b, h // window_size, window_size, w // window_size, window_size, c))
+    windows = x.transpose(0, 1, 3, 2, 4, 5).reshape(-1, window_size, window_size, c)
     return windows
 
 
@@ -35,13 +50,13 @@ class Roll(nn.Cell):
     """Roll Cell"""
 
     def __init__(self, shift_size, shift_axis=(1, 2), parallel_config=default_dpmp_config):
+        # pylint: disable=W0613
         super(Roll, self).__init__()
         if parallel_config:
             dp = parallel_config.data_parallel
         else:
             dp = 1
         self.roll = nn.Roll(to_2tuple(shift_size), shift_axis)
-        # self.roll.roll.shard(((dp, 1, 1, 1),),)
 
     def construct(self, x):
         x = self.roll(x)
@@ -71,10 +86,10 @@ class WindowPartition(nn.Cell):
         Returns:
             windows: (num_windows*B, window_size, window_size, C)
         """
-        B, H, W, C = x.shape
-        x = self.reshape(x, (B, H // self.window_size, self.window_size, W // self.window_size, self.window_size, C))
+        b, h, w, c = x.shape
+        x = self.reshape(x, (b, h // self.window_size, self.window_size, w // self.window_size, self.window_size, c))
         x = self.transpose(x, (0, 1, 3, 2, 4, 5))
-        x = self.reshape(x, (B * H * W // (self.window_size ** 2), self.window_size, self.window_size, C))
+        x = self.reshape(x, (b * h * w // (self.window_size ** 2), self.window_size, self.window_size, c))
 
         return x
 
@@ -91,21 +106,21 @@ class WindowReverse(nn.Cell):
         self.reshape = P.Reshape()
         self.transpose = P.Transpose().shard(((dp, 1, 1, 1),))
 
-    def construct(self, windows, window_size, H, W):
+    def construct(self, windows, window_size, h, w):
         """
         Args:
             windows: (num_windows*B, window_size, window_size, C)
             window_size (int): Window size
-            H (int): Height of image
-            W (int): Width of image
+            h (int): Height of image
+            w (int): Width of image
 
         Returns:
             x: (B, H, W, C)
         """
-        B = windows.shape[0] // (H * W // window_size // window_size)
-        x = self.reshape(windows, (B, H // window_size, W // window_size, window_size, window_size, -1))
+        b = windows.shape[0] // (h * w // window_size // window_size)
+        x = self.reshape(windows, (b, h // window_size, w // window_size, window_size, window_size, -1))
         x = self.transpose(x, (0, 1, 3, 2, 4, 5))
-        x = self.reshape(x, (B, H, W, -1))
+        x = self.reshape(x, (b, h, w, -1))
         return x
 
 
@@ -255,6 +270,7 @@ class SwinTransformerBlock(nn.Cell):
 
 
 class Block(nn.transformer.transformer.TransformerEncoderLayer):
+    """Block of ringmo"""
     def __init__(self,
                  batch_size,
                  hidden_size,
@@ -307,26 +323,14 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
                                    softmax_compute_type=softmax_compute_type,
                                    param_init_type=param_init_type,
                                    parallel_config=parallel_config_args)
-        if self.use_moe:
-            self.output = Moe(hidden_size=hidden_size,
-                              dropout_rate=drop_rate,
-                              ffn_hidden_size=ffn_hidden_size,
-                              param_init_type=param_init_type,
-                              weight_init=weight_init,
-                              hidden_act=hidden_act,
-                              use_dropout=False,
-                              moe_config=moe_config,
-                              parallel_config=parallel_config)
-        else:
-            # Feed Forward Network, FFN
-            self.output = MLP(hidden_size=hidden_size,
-                              dropout_rate=drop_rate,
-                              ffn_hidden_size=ffn_hidden_size,
-                              param_init_type=param_init_type,
-                              weight_init=weight_init,
-                              hidden_act=hidden_act,
-                              use_dropout=False,
-                              parallel_config=parallel_config)
+        self.output = MLP(hidden_size=hidden_size,
+                          dropout_rate=drop_rate,
+                          ffn_hidden_size=ffn_hidden_size,
+                          param_init_type=param_init_type,
+                          weight_init=weight_init,
+                          hidden_act=hidden_act,
+                          use_dropout=False,
+                          parallel_config=parallel_config)
         if init_values is not None:
             self.gamma_1 = Parameter(
                 Tensor(init_values * np.ones((hidden_size,)), mstype.float32),
@@ -345,7 +349,8 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
         self.mul = P.Mul().shard(((parallel_config.data_parallel, 1, 1), (parallel_config.data_parallel, 1, 1)))
         self.reshape = P.Reshape()
 
-    def construct(self, x, input_mask, init_reset=True, batch_valid_length=None, rel_pos_bias=None, modal_mask=None):
+    def construct(self, x, input_mask, init_reset=True, batch_valid_length=None, rel_pos_bias=None):
+        """construct of Block"""
         self._check_input(x, input_mask, init_reset, batch_valid_length)
         x_shape = F.shape(x)
         x = F.reshape(x, (-1, x_shape[-1]))
@@ -371,11 +376,8 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
 
         output_x = self.layernorm2(x)
         output_x = F.cast(output_x, self.dtype)
-        aux_loss = None
-        if self.use_moe:
-            mlp_logit, aux_loss = self.output(output_x)
-        else:
-            mlp_logit = self.output(output_x)
+
+        mlp_logit = self.output(output_x)
 
         if self.gamma_2 is not None:
             mlp_logit = self.mul_gamma(mlp_logit, self.gamma_2)
@@ -398,7 +400,4 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
             else:
                 output = self.add(x, mlp_logit)
             output = F.reshape(output, x_shape)
-
-        if self.use_moe:
-            return output, aux_loss
         return output
