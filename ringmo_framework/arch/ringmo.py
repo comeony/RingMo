@@ -42,15 +42,16 @@ class SwinTransformerForRingMo(SwinTransformer):
 
         if self.ape:
             x = self.add_pos(x, self.absolute_pos_embed)
+
         x = self.pos_drop(x)
 
-        aux_loss = 0.
         for layer in self.layers:
             x = layer(x)
+
         x = self.norm(x)
         x = self.transpose(x, (0, 2, 1))
         x = self.reshape(x, (x.shape[0], x.shape[1], self.hw, self.hw))
-        return x, aux_loss
+        return x
 
     def no_weight_decay(self):
         return super().no_weight_decay() | {'mask_token'}
