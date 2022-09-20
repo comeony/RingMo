@@ -1,5 +1,5 @@
 base_config: [
-  '../base/context/semi_moe_mode_2nodes.yaml',
+  '../base/context/default_mode.yaml',
   '../base/datasets/pretrain_dataset.yaml',
   '../base/models/simmim_vit_base_p16.yaml',
   '../base/schedules/default_schedule.yaml',
@@ -14,20 +14,10 @@ auto_tune: True  # dataset performance
 filepath_prefix: "./autotune"
 autotune_per_step: 10
 
-#parallel:
-#  strategy_ckpt_save_file: "./ckpt_strategy.ckpt"
-#  strategy_ckpt_load_file:
-
-moe_config: # 参考 mindspore.nn.transformer.moe
-    expert_num: 32  #  专家数量  examples: 32
-    capacity_factor: 1.05  # token容量 候选token比例
-    aux_loss_factor: 0.0001  # moe loss 占比
-    num_experts_chosen: 1  # token choose experts num
-
 pretrain_dataset:
-  data_type: "mindrecord"
-  data_path: "/data/mae_15w_record_2"
-  image_ids: "aircas.mindrecord00"
+  data_type: "custom"
+  data_path: "/data/imageNet-1k"
+  image_ids: "train_ids.json"
   input_columns: [ "image" ]
   output_columns: [ "image", "mask" ]
   column_order: [ "image", "mask" ]
