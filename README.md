@@ -70,14 +70,12 @@ RingMo-Framework 是由华为大模型研发团队与中科院空天信息创新
 
   ```python
   # 以使用MAE-Vit-Base-P16-img-224的预训练权重为例进行复杂下游任务迁移学习
-  from ringmo-framework.backbone.Vit import vit_base_p16
+  from ringmo-framework.models.backbone.Vit import vit_base_p16
   from ringmo-framework.tools import load_checkpoint
   # 在目标检测网络Faster-RCNN中，使用ringmo-framework的vit_base_p16替换原有的resnet模型作为backbone
   ...
   self.backbone = vit_base_p16(**kwargs)
   ...
-  # 获取MAE-Vit-Base-P16-Img-224预训练权重
-  checkpoint = load_checkpoint(ckpt_name="mae-vit-base-p16-aircas100w-img-224")
   ```
 
   
