@@ -260,7 +260,7 @@ class SwinTransformer(nn.Cell):
                     cell.bias.set_data(weight_init_.initializer(weight_init_.Zero(),
                                                                 cell.bias.shape,
                                                                 cell.bias.dtype))
-            elif isinstance(cell, LayerNorm):
+            elif isinstance(cell, (LayerNorm, nn.LayerNorm)):
                 cell.gamma.set_data(weight_init_.initializer(weight_init_.One(),
                                                              cell.gamma.shape,
                                                              cell.gamma.dtype))
