@@ -24,7 +24,7 @@ import random
 
 import numpy as np
 
-import mindspore.dataset.transforms.py_transforms as py_transforms
+from mindspore.dataset.transforms import py_transforms
 
 
 def _get_pixels(per_pixel, rand_color, patch_size, dtype=np.float32):

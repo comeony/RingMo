@@ -46,28 +46,32 @@ class PatchMerging(nn.Cell):
                  norm_layer=LayerNorm,
                  parallel_config=default_dpmp_config):
         super(PatchMerging, self).__init__()
+        dp = parallel_config.data_parallel
+        mp = parallel_config.model_parallel
         self.input_resolution = input_resolution
         self.dim = dim[0] if isinstance(dim, tuple) and len(dim) == 1 else dim
         # Default False
         self.reduction = Linear(
             in_channels=4 * dim, out_channels=2 * dim, has_bias=False, weight_init=weight_init).to_float(mstype.float16)
+        self.reduction.shard(strategy_matmul=((dp, mp), (mp, 1)), strategy_bias=((dp, 1), (1,)))
         self.norm = norm_layer([dim * 4, ], eps=1e-4)
+        self.norm.shard(((dp, 1, 1),))
         self.h, self.w = self.input_resolution
         self.h_2, self.w_2 = self.h // 2, self.w // 2
         self.h2w2 = int(self.h * self.w // 4)
         self.dim_mul_4 = int(dim * 4)
         self.cast = P.Cast()
         self.reshape = P.Reshape()
-        self.transpose = P.Transpose()
+        self.transpose = P.Transpose().shard(((dp, 1, 1, 1, 1, 1),))
 
     def construct(self, x):
         """
         x: B, H*W, C
         """
-        B = x.shape[0]
-        x = self.reshape(x, (B, self.h_2, 2, self.w_2, 2, self.dim))
+        b = x.shape[0]
+        x = self.reshape(x, (b, self.h_2, 2, self.w_2, 2, self.dim))
         x = self.transpose(x, (0, 1, 3, 4, 2, 5))
-        x = self.reshape(x, (B, self.h2w2, self.dim_mul_4))
+        x = self.reshape(x, (b, self.h2w2, self.dim_mul_4))
         x = self.norm(x)
         x = self.cast(x, mstype.float16)
         x = self.reduction(x)
@@ -178,6 +182,7 @@ class SwinTransformer(nn.Cell):
                  moe_config=default_moe_config,
                  parallel_config=default_dpmp_config):
         super(SwinTransformer, self).__init__()
+        dp = parallel_config.data_parallel
         self.parallel_config = parallel_config
         self.use_moe = moe_config.expert_num > 1
         self.num_classes = num_classes
@@ -195,7 +200,8 @@ class SwinTransformer(nn.Cell):
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
             img_size=image_size, patch_size=patch_size, in_features=in_chans, out_features=embed_dim,
-            norm_layer=norm_layer if self.patch_norm else None, patch_type=patch_type)
+            norm_layer=norm_layer if self.patch_norm else None, patch_type=patch_type,
+            parallel_config=parallel_config)
         num_patches = self.patch_embed.num_patches
         self.num_patches = num_patches
         # patches_resolution = self.patch_embed.patches_resolution
@@ -208,9 +214,10 @@ class SwinTransformer(nn.Cell):
                 Tensor(np.zeros((1, num_patches, embed_dim)), dtype=mstype.float32), name="ape")
 
         self.pos_drop = Dropout(keep_prob=1.0 - drop_rate)
+        self.pos_drop.shard(((dp, 1, 1),))
 
         # stochastic depth
-        dpr = [x for x in np.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
+        dpr = list(np.linspace(0, drop_path_rate, sum(depths)))  # stochastic depth decay rule
         parallel_config_args = parallel_config.moe_parallel_config if self.use_moe else parallel_config.dp_mp_config
 
         # build layers
@@ -236,9 +243,9 @@ class SwinTransformer(nn.Cell):
                 self.final_seq = self.final_seq // 4
             self.layers.append(layer)
 
-        self.norm = norm_layer([self.num_features, ], eps=1e-6)
-        self.transpose = P.Transpose()
-        self.avgpool = P.ReduceMean(keep_dims=False)
+        self.norm = norm_layer([self.num_features, ], eps=1e-6).shard(((dp, 1, 1),))
+        self.transpose = P.Transpose().shard(((dp, 1, 1),))
+        self.avgpool = P.ReduceMean(keep_dims=False).shard(((dp, 1, 1),))
         self.init_weights()
 
     def init_weights(self):
@@ -284,13 +291,18 @@ class SwinTransformer(nn.Cell):
 
 
 class FinetuneSwin(nn.Cell):
+    """finetune swim"""
     def __init__(self, **kwargs):
         super(FinetuneSwin, self).__init__()
         self.encoder = SwinTransformer(**kwargs)
+        parallel_config = self.encoder.parallel_config
+        dp = parallel_config.data_parallel
+        mp = parallel_config.model_parallel
         self.head = Linear(
             self.encoder.num_features, self.encoder.num_classes,
             weight_init=weight_init_.TruncatedNormal(sigma=2e-5),
             compute_dtype=mstype.float32).to_float(mstype.float32)
+        self.head.shard(strategy_bias=((dp, mp), (mp,)), strategy_matmul=((dp, 1), (mp, 1)))
 
     def no_weight_decay(self):
         if hasattr(self.encoder, 'no_weight_decay'):
@@ -311,6 +323,7 @@ class FinetuneSwin(nn.Cell):
 
 
 def build_swin(config):
+    """build swim"""
     model = FinetuneSwin(
         parallel_config=config.parallel_config,
         moe_config=config.moe_config,

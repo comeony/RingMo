@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""ringmo"""
 from mindspore import nn
 from mindspore import ops as P
 from mindspore import dtype as mstype
@@ -7,17 +22,20 @@ from ringmo.src.models.backbone.vit import Vit
 
 
 class SwinTransformerForRingMo(SwinTransformer):
+    """swim transformer for ringmo"""
     def __init__(self, **kwargs):
         super(SwinTransformerForRingMo, self).__init__(**kwargs)
         assert self.num_classes == 0
+        dp = self.parallel_config.data_parallel
         self.reshape = P.Reshape()
-        self.transpose = P.Transpose()
-        self.add_pos = P.Add()
-        self.sub = P.Sub()
-        self.multi = P.Mul()
+        self.transpose = P.Transpose().shard(((dp, 1, 1),))
+        self.add_pos = P.Add().shard(((dp, 1, 1), (1, 1, 1)))
+        self.sub = P.Sub().shard(((), (dp, 1, 1)))
+        self.multi = P.Mul().shard(((dp, 1, 1), (dp, 1, 1)))
         self.hw = int(self.final_seq ** 0.5)
 
     def construct(self, x, mask):
+        # pylint: disable=W0221
         x = self.multi(x, self.sub(1, mask))
         x = self.patch_embed(x)
 
@@ -38,20 +56,23 @@ class SwinTransformerForRingMo(SwinTransformer):
 
 
 class VisionTransformerForRingMo(Vit):
+    """vision transformer for ringmo"""
     def __init__(self, **kwargs):
         super(VisionTransformerForRingMo, self).__init__(**kwargs)
 
         assert self.num_classes == 0
+        dp = self.parallel_config.data_parallel
         self.reshape = P.Reshape()
-        self.transpose = P.Transpose()
-        self.add_pos = P.Add()
-        self.sub = P.Sub()
-        self.multi = P.Mul()
+        self.transpose = P.Transpose().shard(((dp, 1, 1),))
+        self.add_pos = P.Add().shard(((dp, 1, 1), (1, 1, 1)))
+        self.sub = P.Sub().shard(((), (dp, 1, 1)))
+        self.multi = P.Mul().shard(((dp, 1, 1), (dp, 1, 1)))
         self.hw = int(self.num_patches ** 0.5)
 
-        self.slice = P.Slice()
+        self.slice = P.Slice().shard(((dp, 1, 1),))
 
     def construct(self, x, mask):
+        # pylint: disable=W0221
         x = self.multi(x, self.sub(1, mask))
         x = self.patch_embed(x)
 
@@ -75,11 +96,16 @@ class VisionTransformerForRingMo(Vit):
 
 
 class RingMo(nn.Cell):
-    def __init__(self, encoder, encoder_stride, use_lbp=False):
+    """RingMo"""
+    def __init__(self, encoder, encoder_stride, use_lbp=False, parallel_config=None):
         super(RingMo, self).__init__()
         self.encoder = encoder
         self.encoder_stride = encoder_stride
         self.use_lbp = use_lbp
+        if parallel_config:
+            dp = parallel_config.data_parallel
+        else:
+            dp = 1
 
         self.decoder = nn.Conv2d(
             in_channels=self.encoder.num_features,
@@ -87,26 +113,35 @@ class RingMo(nn.Cell):
             kernel_size=1, has_bias=True, pad_mode='pad'
         )
 
+        # encoder output -> [B,C,H,W]
+        self.decoder.conv2d.shard(((dp, 1, 1, 1), (1, 1, 1, 1)))
+        self.decoder.bias_add.shard(((dp, 1, 1, 1), (1,)))
+
         self.decoder_lbp = nn.Conv2d(
             in_channels=self.encoder.num_features,
             out_channels=self.encoder_stride ** 2 * 3,
             kernel_size=1, has_bias=True, pad_mode='pad'
         )
 
-        self.pixelshuffle = P.DepthToSpace(self.encoder_stride)
+        # encoder output -> [B,C,H,W]
+        self.decoder_lbp.conv2d.shard(((dp, 1, 1, 1), (1, 1, 1, 1)))
+        self.decoder_lbp.bias_add.shard(((dp, 1, 1, 1), (1,)))
+
+        self.pixelshuffle = P.DepthToSpace(self.encoder_stride).shard(((dp, 1, 1, 1),))
         self.in_chans = self.encoder.in_chans
         self.patch_size = self.encoder.patch_size
-        self.l1_loss = nn.L1Loss(reduction='none')
+        self.l1_loss = L1Loss(reduction='none', parallel_config=parallel_config)
 
-        self.expand_dim = P.ExpandDims()
+        self.expand_dim = P.ExpandDims().shard(((dp, 1, 1),))
         self.cast = P.Cast()
-        self.div = P.Div()
-        self.multi = P.Mul()
+        self.div = P.Div().shard(((), ()))
+        self.multi = P.Mul().shard(((dp, 1, 1, 1), (dp, 1, 1, 1)))
 
-        self.sum = P.ReduceSum()
-        self.add = P.Add()
+        self.sum = P.ReduceSum().shard(((dp, 1, 1, 1),))
+        self.add = P.Add().shard(((), ()))
 
     def ringmo_loss(self, x, x_rec, lbp=None, lbp_rec=None, mask=None):
+        """ringmo loss"""
         x = self.cast(x, mstype.float32)
         x_rec = self.cast(x_rec, mstype.float32)
         mask = self.cast(mask, mstype.float32)
@@ -135,6 +170,7 @@ class RingMo(nn.Cell):
         return inputs[0], inputs[1], inputs[2]
 
     def construct(self, *inputs):
+        """construct of RingMo"""
         x_in, lbp_in, mask_in = self._check_input(inputs)
 
         # x -> [B,L,C]
@@ -166,6 +202,7 @@ class RingMo(nn.Cell):
 
 
 def build_ringmo(config):
+    """build ringmo"""
     model_type = config.model.backbone
     if model_type == 'swin':
         encoder = SwinTransformerForRingMo(
@@ -215,6 +252,7 @@ def build_ringmo(config):
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
-    model = RingMo(encoder=encoder, encoder_stride=encoder_stride, use_lbp=config.model.use_lbp)
+    model = RingMo(encoder=encoder, encoder_stride=encoder_stride, parallel_config=config.parallel_config,
+                   use_lbp=config.model.use_lbp)
 
     return model

@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""simmim of ringmo"""
 from mindspore import nn
 from mindspore import ops as P
 from mindspore import dtype as mstype
@@ -9,23 +24,25 @@ from ringmo.src.models.backbone.vit import Vit
 
 
 class SwinTransformerForSimMIM(SwinTransformer):
+    """swin transformer for simmim"""
     def __init__(self, **kwargs):
         super(SwinTransformerForSimMIM, self).__init__(**kwargs)
 
         assert self.num_classes == 0
+        dp = self.parallel_config.data_parallel
         self.mask_token = Parameter(
             weight_init.initializer(weight_init.TruncatedNormal(sigma=.02), (1, 1, self.embed_dim)),
             name='mask_token', requires_grad=True)
-        self.broadcast = P.BroadcastTo((self.batch_size, self.num_patches, -1))
-        self.expand_dim = P.ExpandDims()
+        self.expand_dim = P.ExpandDims().shard(((dp, 1),))
         self.reshape = P.Reshape()
-        self.sub_2 = P.Sub()
-        self.add = P.Add()
-        self.multi = P.Mul()
-        self.transpose = P.Transpose()
+        self.sub_2 = P.Sub().shard(((), (dp, 1, 1)))
+        self.add = P.Add().shard(((dp, 1, 1), (dp, 1, 1)))
+        self.multi = P.Mul().shard(((dp, 1, 1), (dp, 1, 1)))
+        self.transpose = P.Transpose().shard(((dp, 1, 1),))
         self.hw = int(self.final_seq ** 0.5)
 
     def construct(self, x, mask):
+        # pylint: disable=W0221
         x = self.patch_embed(x)
         batch, seq, _ = x.shape
         # [b,196,1408]
@@ -53,29 +70,35 @@ class SwinTransformerForSimMIM(SwinTransformer):
 
 
 class VisionTransformerForSimMIM(Vit):
+    """vision transformer for simmim"""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        dp = self.encoder_config["parallel_config"].data_parallel
 
         self.mask_token = Parameter(
             weight_init.initializer(weight_init.TruncatedNormal(sigma=.02), (1, 1, self.embed_dim)),
             name='mask_token', requires_grad=True)
-        self.expand_dim = P.ExpandDims()
+        self.expand_dim = P.ExpandDims().shard(((dp, 1),))
         self.reshape = P.Reshape()
-        self.cat = P.Concat(axis=1)
-        self.transpose = P.Transpose()
+        self.cat = P.Concat(axis=1).shard(((dp, 1, 1), (dp, 1, 1)))
+        self.transpose = P.Transpose().shard(((dp, 1, 1),))
         self.hw = int(self.num_patches ** 0.5)
 
         self.broadcast = P.BroadcastTo((self.batch_size, self.seq_length - 1, -1)).shard(((1, 1, 1),))
 
-        self.sub_2 = P.Sub()
-        self.add = P.Add()
-        self.multi = P.Mul()
-        self.slice = P.Slice()
+
+        self.sub_2 = P.Sub().shard(((), (dp, 1, 1)))
+        self.add = P.Add().shard(((dp, 1, 1), (dp, 1, 1)))
+        self.multi = P.Mul().shard(((dp, 1, 1), (dp, 1, 1)))
+
+        self.slice = P.Slice().shard(((dp, 1, 1),))
 
     def no_weight_decay(self):
         return super().no_weight_decay() | {'mask_token'}
 
     def construct(self, x, mask):
+        # pylint: disable=W0221
         x = self.patch_embed(x)
 
         batch, seq, channel = x.shape
@@ -107,10 +130,16 @@ class VisionTransformerForSimMIM(Vit):
 
 
 class SimMIM(nn.Cell):
+    """SimMIM"""
     def __init__(self, encoder, encoder_stride, parallel_config=None):
         super(SimMIM, self).__init__()
         self.encoder = encoder
         self.encoder_stride = encoder_stride
+
+        if parallel_config:
+            dp = parallel_config.data_parallel
+        else:
+            dp = 1
 
         self.decoder = nn.Conv2d(
             in_channels=self.encoder.num_features,
@@ -118,20 +147,25 @@ class SimMIM(nn.Cell):
             kernel_size=1, has_bias=True, pad_mode='pad'
         )
 
-        self.pixelshuffle = P.DepthToSpace(self.encoder_stride)
+        # encoder output -> [B,C,H,W]
+        self.decoder.conv2d.shard(((dp, 1, 1, 1), (1, 1, 1, 1)))
+        self.decoder.bias_add.shard(((dp, 1, 1, 1), (1,)))
+
+        self.pixelshuffle = P.DepthToSpace(self.encoder_stride).shard(((dp, 1, 1, 1),))
         self.in_chans = self.encoder.in_chans
         self.patch_size = self.encoder.patch_size
-        self.l1_loss = nn.L1Loss(reduction='none')
+        self.l1_loss = L1Loss(reduction='none', parallel_config=parallel_config)
 
-        self.expand_dim = P.ExpandDims()
+        self.expand_dim = P.ExpandDims().shard(((dp, 1, 1),))
         self.cast = P.Cast()
-        self.div = P.Div()
-        self.multi = P.Mul()
+        self.div = P.Div().shard(((), ()))
+        self.multi = P.Mul().shard(((dp, 1, 1, 1), (dp, 1, 1, 1)))
 
-        self.sum = P.ReduceSum()
-        self.add = P.Add()
+        self.sum = P.ReduceSum().shard(((dp, 1, 1, 1),))
+        self.add = P.Add().shard(((), ()))
 
     def sim_loss(self, x, x_rec, mask):
+        """sim loss"""
         x = self.cast(x, mstype.float32)
         x_rec = self.cast(x_rec, mstype.float32)
         mask = self.cast(mask, mstype.float32)
@@ -145,6 +179,7 @@ class SimMIM(nn.Cell):
         return loss
 
     def construct(self, x, mask):
+        """construct of SimMIM"""
         # x -> [B,L,C]
         z = self.encoder(x, mask)
         # z -> [B,C,H,W]
@@ -174,6 +209,7 @@ class SimMIM(nn.Cell):
 
 
 def build_simmim(config):
+    """build simmim"""
     model_type = config.model.backbone
     if model_type == 'swin':
         encoder = SwinTransformerForSimMIM(
