@@ -322,6 +322,30 @@ class FinetuneSwin(nn.Cell):
         return self.head(x)
 
 
+def swin_tiny_p4_w6(**kwargs):
+    return SwinTransformer(
+        image_size=192, patch_size=4, embed_dim=96, depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24], window_size=6, mlp_ratio=4, **kwargs)
+
+
+def swin_tiny_p4_w7(**kwargs):
+    return SwinTransformer(
+        image_size=224, patch_size=4, embed_dim=96, depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24], window_size=6, mlp_ratio=4, **kwargs)
+
+
+def swin_base_p4_w6(**kwargs):
+    return SwinTransformer(
+        patch_size=4, embed_dim=128, depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32], window_size=6, mlp_ratio=4, **kwargs)
+
+
+def swin_base_p4_w7(**kwargs):
+    return SwinTransformer(
+        image_size=224, patch_size=4, embed_dim=128, depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32], window_size=7, mlp_ratio=4, **kwargs)
+
+
 def build_swin(config):
     """build swim"""
     model = FinetuneSwin(
