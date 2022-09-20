@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""lr schedule"""
 import math
 
 import numpy as np
@@ -44,6 +44,7 @@ class WarmUpCosineDecayV1(LearningRateSchedule):
 
 
 class MultiEpochsDecayLR(LearningRateSchedule):  # for simmim vit.
+    """MultiEpochsDecayLR"""
     def __init__(self, learning_rate, multi_epochs, steps_per_epoch=1, factor=10):
         super(MultiEpochsDecayLR, self).__init__()
         if not isinstance(multi_epochs, (list, tuple)):
@@ -65,9 +66,12 @@ class MultiEpochsDecayLR(LearningRateSchedule):  # for simmim vit.
 
 
 class WarmUpMultiStepDecay(LearningRateSchedule):
+    """WarmUpMultiStepDecay"""
     def __init__(self, base_lr, warmup_steps, start_warmup_value,
-                 factor=10, multi_epochs=[700, ], steps_per_epoch=1):
+                 factor=10, multi_epochs=None, steps_per_epoch=1):
         super(WarmUpMultiStepDecay, self).__init__()
+        if multi_epochs is None:
+            multi_epochs = [700,]
         self.warmup_lr = WarmUpLR(base_lr, warmup_steps + 1, start_warmup_value)
         self.multisteps_lr = MultiEpochsDecayLR(base_lr, multi_epochs, steps_per_epoch, factor)
 
@@ -108,11 +112,12 @@ def lr_adjust(max_lr, min_lr, step, warmup_steps, decay_steps, start_warmup_valu
         lr = max_lr * step / warmup_steps + start_warmup_value
     else:
         lr = min_lr + (max_lr - min_lr) * 0.5 * (
-                1. + math.cos(math.pi * (step - warmup_steps) / decay_steps))
+            1. + math.cos(math.pi * (step - warmup_steps) / decay_steps))
     return lr
 
 
 class WarmUpCosineDecayV2(LearningRateSchedule):
+    """WarmUpCosineDecayV2"""
     def __init__(self,
                  base_lr: float,
                  t_initial: int,
@@ -141,7 +146,7 @@ class WarmUpCosineDecayV2(LearningRateSchedule):
         self.t_in_epochs = t_in_epochs
         self.k_decay = k_decay
 
-        self.base_values = [base_lr, ]
+        self.base_values = [base_lr,]
         if self.warmup_t:
             self.warmup_steps = [(v - warmup_lr_init) / self.warmup_t for v in self.base_values]
             # super().update_groups(self.warmup_lr_init)
@@ -151,6 +156,7 @@ class WarmUpCosineDecayV2(LearningRateSchedule):
         self.lr_tensor = Tensor([self.get_epoch_values(i) for i in range(self.t_initial)], mstype.float32)
 
     def _get_lr(self, t):
+        """get lr"""
         if t < self.warmup_t:
             lrs = [self.warmup_lr_init + t * s for s in self.warmup_steps]
         else:
@@ -158,19 +164,19 @@ class WarmUpCosineDecayV2(LearningRateSchedule):
                 t = t - self.warmup_t
 
             if self.cycle_mul != 1:
-                i = math.floor(math.log(1 - t / self.t_initial * (1 - self.cycle_mul), self.cycle_mul))
-                t_i = self.cycle_mul ** i * self.t_initial
-                t_curr = t - (1 - self.cycle_mul ** i) / (1 - self.cycle_mul) * self.t_initial
+                i1 = math.floor(math.log(1 - t / self.t_initial * (1 - self.cycle_mul), self.cycle_mul))
+                t_i = self.cycle_mul ** i1 * self.t_initial
+                t_curr = t - (1 - self.cycle_mul ** i1) / (1 - self.cycle_mul) * self.t_initial
             else:
-                i = t // self.t_initial
+                i1 = t // self.t_initial
                 t_i = self.t_initial
-                t_curr = t - (self.t_initial * i)
+                t_curr = t - (self.t_initial * i1)
 
-            gamma = self.cycle_decay ** i
+            gamma = self.cycle_decay ** i1
             lr_max_values = [v * gamma for v in self.base_values]
             k = self.k_decay
 
-            if i < self.cycle_limit:
+            if i1 < self.cycle_limit:
                 lrs = [
                     self.lr_min + 0.5 * (lr_max - self.lr_min) * (1 + math.cos(math.pi * t_curr ** k / t_i ** k))
                     for lr_max in lr_max_values
@@ -183,21 +189,18 @@ class WarmUpCosineDecayV2(LearningRateSchedule):
     def get_epoch_values(self, epoch: int):
         if self.t_in_epochs:
             return self._get_lr(epoch)
-        else:
-            return None
+        return None
 
     def get_update_values(self, num_updates: int):
         if not self.t_in_epochs:
             return self._get_lr(num_updates)
-        else:
-            return None
+        return None
 
     def get_cycle_length(self, cycles=0):
         cycles = max(1, cycles or self.cycle_limit)
         if self.cycle_mul == 1.0:
             return self.t_initial * cycles
-        else:
-            return int(math.floor(-self.t_initial * (self.cycle_mul ** cycles - 1) / (1 - self.cycle_mul)))
+        return int(math.floor(-self.t_initial * (self.cycle_mul ** cycles - 1) / (1 - self.cycle_mul)))
 
     def construct(self, global_step):
         return self.lr_tensor[global_step][0]

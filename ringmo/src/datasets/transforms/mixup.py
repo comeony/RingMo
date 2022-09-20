@@ -29,7 +29,7 @@ from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops as P
 
-import mindspore.dataset.transforms.py_transforms as py_transforms
+from mindspore.dataset.transforms import py_transforms
 
 
 def one_hot(x, num_classes, on_value=1., off_value=0.):

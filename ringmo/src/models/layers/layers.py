@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""layers of ringmo"""
 import numpy as np
 
 from mindspore import nn, Tensor
@@ -12,6 +27,7 @@ def gen_shape(x_shape, ndim):
 
 
 class LayerNorm(nn.transformer.layers._LayerNorm):
+    # pylint: disable=W0212
     r"""
     A self-defined layer norm operation using reduce sum and reduce mean.
     """
@@ -24,6 +40,7 @@ class LayerNorm(nn.transformer.layers._LayerNorm):
 
 
 class Linear(nn.transformer.layers._Linear):
+    # pylint: disable=W0212
     r"""
     Linear function for RingMo.
     """
@@ -57,6 +74,7 @@ class Linear(nn.transformer.layers._Linear):
         self.activation_compute_type = activation_compute_type
 
     def construct(self, x):
+        """construct of layer"""
         out_shape = P.Shape()(x)[:-1] + (self.out_channels,)
         x = P.Reshape()(x, (-1, self.in_channels))
         if self.expert_flag:
@@ -73,14 +91,13 @@ class Linear(nn.transformer.layers._Linear):
 
 
 class Identity(nn.Cell):
-    def __init__(self):
-        super(Identity, self).__init__()
 
     def construct(self, x):
         return x
 
 
 class Dropout(nn.transformer.layers._Dropout):
+    # pylint: disable=W0212
     r"""
         A Dropout Implements with P.DropoutGenMask and  P.DropoutDoMask for context training.
     """
@@ -93,6 +110,7 @@ class DropPath(nn.Cell):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
     def __init__(self, drop_prob, ndim=1, parallel_config=None):
+        # pylint: disable=W0613
         super(DropPath, self).__init__()
         self.drop = Dropout(keep_prob=1 - drop_prob)
         shape = (1,) + (1,) * (ndim + 1)

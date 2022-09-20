@@ -13,8 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """metric"""
-import os
-
 import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 from mindspore.ops import operations as P
@@ -34,10 +32,7 @@ class ClassifyCorrect(nn.Cell):
         self.use_moe = use_moe
 
     def construct(self, data, label):
-        if self.use_moe:
-            outputs, _ = self._network(data)
-        else:
-            outputs = self._network(data)
+        outputs = self._network(data)
         y_pred = self.argmax(outputs)
         y_pred = self.cast(y_pred, mstype.int32)
         y_correct = self.equal(y_pred, label)
@@ -60,6 +55,7 @@ class ClassifyCorrectForDPMode(nn.Cell):
         self.allreduce = P.AllReduce(P.ReduceOp.SUM, GlobalComm.WORLD_COMM_GROUP).shard(((),))
 
     def construct(self, data, label):
+        """construct of ClassifyCorrectForDPMode"""
         if self.use_moe:
             outputs, _ = self._network(data)
         else:

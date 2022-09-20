@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""load ckpt"""
 import numpy as np
 from scipy import interpolate
 
@@ -10,6 +25,7 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 def load_ckpt(args, cfts, net, model, net_with_wrapper, train_dataset, new_epochs,
               valid_dataset=None, is_finetune=False):
+    """load ckpt"""
     # load pretrain or resume ckpt
     mode = _get_parallel_mode()
     train_config = args.train_config
@@ -51,6 +67,7 @@ def load_ckpt(args, cfts, net, model, net_with_wrapper, train_dataset, new_epoch
 
 
 def load_pretrained_ckpt(config, model, finetune_ckpt):
+    """load pretrained ckpt"""
     config.logger.info(f">>>>>>>>>> Fine-tuned from {finetune_ckpt} ..........")
     checkpoint = load_checkpoint(
         finetune_ckpt, filter_prefix=["adam_v", "adam_m", "epoch_num", "step_num", "global_step"])
@@ -59,10 +76,10 @@ def load_pretrained_ckpt(config, model, finetune_ckpt):
     # model_remove_encoder = remove_encoder_keys(model_dict, logger)
 
     if config.model.backbone == 'swin':
-        config.logger.info(f">>>>>>>>>> Remapping pre-trained keys for SWIN ..........")
+        config.logger.info(">>>>>>>>>> Remapping pre-trained keys for SWIN ..........")
         checkpoint = remap_pretrained_keys_swin(model_dict, checkpoint, config.logger)
     elif config.model.backbone == 'vit':
-        config.logger.info(f">>>>>>>>>> Remapping pre-trained keys for VIT ..........")
+        config.logger.info(">>>>>>>>>> Remapping pre-trained keys for VIT ..........")
         checkpoint = remap_pretrained_keys_vit(model, checkpoint, config.model.depth, config.logger)
     else:
         raise NotImplementedError
@@ -72,7 +89,7 @@ def load_pretrained_ckpt(config, model, finetune_ckpt):
 
 def remove_encoder_keys(model_dict, logger):
     params_remove_encoder = {}
-    if any([True if 'encoder.' in k else False for k in model_dict.keys()]):
+    if any('encoder.' in k for k in model_dict.keys()):
         params_remove_encoder = {
             k.replace('encoder.', ''): v for k, v in model_dict.items() if k.startswith('encoder.')}
         logger.info('Detect pre-trained model, remove [encoder.] prefix.')
@@ -82,21 +99,22 @@ def remove_encoder_keys(model_dict, logger):
 
 
 def remap_pretrained_keys_swin(state_dict, checkpoint_model, logger):
+    """remap pretrained keys swin"""
     # Geometric interpolation when pre-trained patch size mismatch with fine-tuned patch size
     all_keys = list(checkpoint_model.keys())
     for key in all_keys:
         if "relative_position_bias_table" in key:
             relative_position_bias_table_pretrained = checkpoint_model[key]
             relative_position_bias_table_current = state_dict[key]
-            L1, nH1 = relative_position_bias_table_pretrained.shape
-            L2, nH2 = relative_position_bias_table_current.shape
-            if nH1 != nH2:
+            l1, n_h1 = relative_position_bias_table_pretrained.shape
+            l2, n_h2 = relative_position_bias_table_current.shape
+            if n_h1 != n_h2:
                 logger.info(f"Error in loading {key}, passing......")
             else:
-                if L1 != L2:
+                if l1 != l2:
                     logger.info(f"{key}: Interpolate relative_position_bias_table using geo.")
-                    src_size = int(L1 ** 0.5)
-                    dst_size = int(L2 ** 0.5)
+                    src_size = int(l1 ** 0.5)
+                    dst_size = int(l2 ** 0.5)
 
                     def geometric_progression(a, r, n):
                         return a * (1.0 - r ** n) / (1.0 - r)
@@ -131,7 +149,7 @@ def remap_pretrained_keys_swin(state_dict, checkpoint_model, logger):
 
                     all_rel_pos_bias = []
 
-                    for i in range(nH1):
+                    for i in range(n_h1):
                         z = relative_position_bias_table_pretrained[:, i].view(
                             src_size, src_size).asnumpy().astype(np.float32)
                         f_cubic = interpolate.interp2d(x, y, z, kind='cubic')
@@ -159,6 +177,7 @@ def remap_pretrained_keys_swin(state_dict, checkpoint_model, logger):
 
 
 def remap_pretrained_keys_vit(model, checkpoint_model, num_layers, logger):
+    """remap pretrained keys vit"""
     # Duplicate shared rel_pos_bias to each layer
     if getattr(model, 'encoder.use_rel_pos_bias', False) and \
             "encoder.rel_pos_bias.relative_position_bias_table" in checkpoint_model:
