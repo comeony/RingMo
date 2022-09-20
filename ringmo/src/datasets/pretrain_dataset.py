@@ -19,7 +19,6 @@ import json
 
 from PIL import Image
 
-from mindspore import context
 import mindspore.dataset as de
 from mindspore.dataset.vision import Inter
 import mindspore.dataset.vision.c_transforms as C
@@ -32,7 +31,7 @@ MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
 STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
 
 
-class RingMoLoader:
+class ImageLoader:
     def __init__(self, opt_ids, data_dir=None):
         """Loading image files as a dataset generator."""
         opt_path = os.path.join(data_dir, opt_ids)
@@ -57,7 +56,7 @@ def build_dataset(args):
     if args.input_columns is None:
         args.input_columns = ["image"]
     dataset = de.GeneratorDataset(
-        source=RingMoLoader(args.image_ids, data_dir=args.data_path),
+        source=ImageLoader(args.image_ids, data_dir=args.data_path),
         column_names=args.input_columns, num_shards=args.device_num,
         shard_id=args.local_rank, shuffle=args.shuffle,
         num_parallel_workers=args.num_workers,
@@ -66,6 +65,7 @@ def build_dataset(args):
 
 
 def build_transforms(args):
+    """build transforms"""
     trans = [
         C.RandomResizedCrop(
             args.image_size,
@@ -80,6 +80,7 @@ def build_transforms(args):
 
 
 def build_mask(args, ds, input_columns=None, output_columns=None, column_order=None):
+    """build mask"""
     batch_size = args.batch_size
     if args.arch == 'simmim':
         if not input_columns:
@@ -146,8 +147,8 @@ def create_pretrain_dataset(args):
     ds = build_dataset(dataset_config)
     transforms = build_transforms(dataset_config)
 
-    for i in range(len(dataset_config.input_columns)):
-        ds = ds.map(input_columns=dataset_config.input_columns[i],
+    for column in dataset_config.input_columns:
+        ds = ds.map(input_columns=column,
                     operations=transforms,
                     num_parallel_workers=dataset_config.num_workers,
                     python_multiprocessing=dataset_config.python_multiprocessing)
