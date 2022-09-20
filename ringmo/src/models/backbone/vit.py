@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""vit"""
 import math
 import numpy as np
 
@@ -43,6 +58,8 @@ class Vit(nn.Cell):
         self.image_size = image_size
         self.mlp_ratio = mlp_ratio
         self.parallel_config = parallel_config
+
+        dp = parallel_config.data_parallel
 
         self.patch_embed = PatchEmbed(img_size=image_size, patch_size=patch_size,
                                       in_features=in_chans, out_features=embed_dim,
@@ -90,27 +107,29 @@ class Vit(nn.Cell):
         self.encoder_input_mask = Tensor(np.ones((batch_size, seq_length, seq_length)),
                                          mstype.float32)
 
-        self.add = P.Add()
+        self.add = P.Add().shard(((dp, 1, 1), (1, 1, 1)))
         self.cast = P.Cast()
-        self.tile = P.Tile()
+        self.tile = P.Tile().shard(((dp, 1, 1),))
         self.cat = P.Concat(axis=1)
-        self.norm = LayerNorm((embed_dim,), eps=1e-6)
+        self.norm = LayerNorm((embed_dim,), eps=1e-6).shard(((dp, 1, 1),))
         if use_mean_pooling:
-            self.fc_norm = LayerNorm((embed_dim,), eps=1e-6)
+            self.fc_norm = LayerNorm((embed_dim,), eps=1e-6).shard(((dp, 1),))
             del self.norm
         else:
             self.fc_norm = Identity()
 
         self.global_pool = use_mean_pooling
-        self.reduce_mean = P.ReduceMean()
+        self.reduce_mean = P.ReduceMean().shard(((dp, 1, 1),))
         self.dropout = Dropout(keep_prob=(1. - drop_rate))
+        self.dropout.shard(((dp, 1, 1),))
 
-        self.stride_slice = P.StridedSlice()
+        self.stride_slice = P.StridedSlice().shard(((dp, 1, 1),))
 
         self.init_weights_vit()
         self.fix_init_weight()
 
     def fix_init_weight(self):
+        """fix init weight"""
         def rescale(param, layer_id):
             values = param.data / (math.sqrt(2.0 * layer_id))
             param.set_data(values)
@@ -124,7 +143,8 @@ class Vit(nn.Cell):
                 rescale(block.output.projection.weight, layer_id + 1)
 
     def init_weights_vit(self):
-        """ ViT weight initialization, original timm impl (for reproducibility) """
+        """init weights vit
+         ViT weight initialization, original timm impl (for reproducibility) """
         for _, cell in self.cells_and_names():
 
             if isinstance(cell, Linear):
@@ -135,7 +155,7 @@ class Vit(nn.Cell):
                     cell.bias.set_data(weight_init.initializer(weight_init.Zero(),
                                                                cell.bias.shape,
                                                                cell.bias.dtype))
-            elif isinstance(cell, LayerNorm) or isinstance(cell, nn.LayerNorm):
+            elif isinstance(cell, LayerNorm, nn.LayerNorm):
                 cell.gamma.set_data(weight_init.initializer(weight_init.One(),
                                                             cell.gamma.shape,
                                                             cell.gamma.dtype))
@@ -150,6 +170,7 @@ class Vit(nn.Cell):
         return load_param_into_net(self, params_dict)
 
     def construct(self, img):
+        """construct of vit"""
         tokens = self.patch_embed(img)
         cls_tokens = self.tile(self.cls_tokens, (self.batch_size, 1, 1))
         tokens = self.cat((cls_tokens, tokens))
@@ -180,6 +201,7 @@ class Vit(nn.Cell):
 
 
 class FinetuneVit(nn.Cell):
+    """finetune vit"""
     def __init__(self, **kwargs):
         super(FinetuneVit, self).__init__()
         self.encoder = Vit(**kwargs)
@@ -203,6 +225,7 @@ class FinetuneVit(nn.Cell):
 
 
 def build_vit(config):
+    """build vit"""
     model = FinetuneVit(
         parallel_config=config.parallel_config,
         moe_config=config.moe_config,

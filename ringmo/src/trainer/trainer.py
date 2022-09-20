@@ -15,7 +15,7 @@
 """TrainOneStepWithClipGNAndEMA."""
 import logging as logger
 
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.common import RowTensor
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
@@ -91,7 +91,7 @@ def build_wrapper(args, net_with_loss, optimizer, log=logger):
     """get_train_one_step cell"""
     train_wrapper_config = args.train_wrapper
     if train_wrapper_config.use_dynamic_loss_scale:
-        log.info(f"=> Using DynamicLossScaleUpdateCell")
+        log.info("=> Using DynamicLossScaleUpdateCell")
         scale_manager = nn.wrap.loss_scale.DynamicLossScaleUpdateCell(
             loss_scale_value=train_wrapper_config.loss_scale, scale_factor=2, scale_window=1000)
     else:

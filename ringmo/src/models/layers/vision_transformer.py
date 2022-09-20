@@ -1,3 +1,18 @@
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""vision transformer"""
 import numpy as np
 
 from mindspore import nn
@@ -21,7 +36,7 @@ class VisionTransformer(nn.transformer.transformer.TransformerEncoder):
                  ffn_hidden_size,
                  seq_length,
                  num_heads,
-                 predictor_layer=False,
+                 predictor_layer=False,  # pylint: disable=W0613
                  window_size=None,
                  drop_rate=0.,
                  attention_dropout_rate=0.,
@@ -89,19 +104,7 @@ class VisionTransformer(nn.transformer.transformer.TransformerEncoder):
             self.blocks.append(block)
 
     def construct(self, hidden_states, attention_mask, init_reset=True, batch_valid_length=None, rel_pos_bias=None):
-        output = ()
-        if self.use_moe:
-            accum_loss = self.aux_loss
-            for i in range(self.num_layers):
-                hidden_states, aux_loss = self.blocks[i](
-                    hidden_states, attention_mask, init_reset, batch_valid_length, rel_pos_bias)
-
-                accum_loss = self.add(accum_loss, aux_loss)
-            output = output + (hidden_states, accum_loss,)
-            return output
-
         for i in range(self.num_layers):
             hidden_states = self.blocks[i](
                 hidden_states, attention_mask, init_reset, batch_valid_length, rel_pos_bias)
-        output = hidden_states
-        return output
+        return hidden_states
