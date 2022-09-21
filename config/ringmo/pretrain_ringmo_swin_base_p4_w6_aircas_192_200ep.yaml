@@ -27,7 +27,7 @@ train_config:
   epoch: 200
   batch_size: 128
   image_size: 192 # 224 for vit
-  per_epoch_size: 0
+  per_epoch_size: 1
 
 # optimizer
 optimizer:

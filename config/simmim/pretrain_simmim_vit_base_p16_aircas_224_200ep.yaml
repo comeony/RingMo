@@ -1,13 +1,13 @@
 base_config: [
   '../base/context/default_mode.yaml',
   '../base/datasets/pretrain_dataset.yaml',
-  '../base/models/mae_vit_base_p16.yaml',
+  '../base/models/simmim_vit_base_p16.yaml',
   '../base/schedules/default_schedule.yaml',
   '../base/runner/runner.yaml',
   '../base/modelarts/aicc.yaml',
   '../base/__base__.yaml']
 
-arch: "mae"
+arch: "simmim"
 use_parallel: False
 profile: False
 auto_tune: True  # dataset performance
@@ -19,14 +19,14 @@ pretrain_dataset:
   data_path: "/data/imageNet-1k"
   image_ids: "train_ids.json"
   input_columns: [ "image" ]
-  output_columns: [ "image", "mask", "ids_restore", "unmask_index" ]
-  column_order: [ "image", "mask", "ids_restore", "unmask_index" ]
+  output_columns: [ "image", "mask" ]
+  column_order: [ "image", "mask" ]
 
 train_config:
-  epoch: 800
-  batch_size: 64
+  epoch: 200
+  batch_size: 128
   image_size: 224
-  per_epoch_size: 1
+  per_epoch_size: 0
 
 # optimizer
 optimizer:
@@ -38,11 +38,11 @@ optimizer:
 
 # lr sechdule
 lr_schedule:
-  lr_type: "warmup_cosine_decay"
-  base_lr: 0.00015
-  min_lr: 0.
-  warmup_lr: 0.
-  warmup_epochs: 40
+  lr_type: "warmup_cosine_decay_simmim"
+  base_lr: 0.0001
+  min_lr: 0.0000005
+  warmup_lr: 0.0000005
+  warmup_epochs: 20
 
 aicc_config:
   obs_path: "Input your obs path if code is running on modelarts else invalid."

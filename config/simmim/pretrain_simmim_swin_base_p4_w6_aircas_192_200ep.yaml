@@ -24,7 +24,7 @@ pretrain_dataset:
   column_order: [ "image", "mask" ]
 
 train_config:
-  epoch: 100
+  epoch: 200
   batch_size: 128
   image_size: 192
   per_epoch_size: 0

@@ -59,7 +59,7 @@ do
     cp *.sh ./pretrain_parallel$i
     cp -r ../config ./pretrain_parallel$i
     cp -r ../register ./pretrain_parallel$i
-    cp -r ../src ./pretrain_parallel$i
+    cp -r ../ringmo_framework ./pretrain_parallel$i
     cd ./pretrain_parallel$i || exit
     echo "start training for rank $RANK_ID, device $DEVICE_ID"
     env > env.log
