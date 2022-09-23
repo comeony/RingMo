@@ -92,8 +92,6 @@ if __name__ == "__main__":
         config.train_config.resume_ckpt = args_.eval_path
     if args_.batch_size is not None:
         config.train_config.batch_size = args_.batch_size
-    if args_.options is not None:
-        config.merge_from_dict(args_.options)
 
     if config.finetune_dataset.eval_offset < 0:
         config.finetune_dataset.eval_offset = config.train_config.epoch % config.finetune_dataset.eval_interval
