@@ -1,6 +1,6 @@
 # RingMo-Framework
 
-RingMo-Framework 是由华为大模型研发团队与中科院空天信息创新研究院联合打造的一款用于视觉领域的全国产化自监督预训练开发套件，旨在为业界提供高质量的视觉自监督预训练模型库和降低用户开发大规模预训练模型门槛，其中集成业界如MAE、SIMMIM、A2MMIM、SimCLR等主流的视觉自监督预训练架构和专用于遥感领域的RingMo架构，包含Vit、Vit-moe、Swin(V1-V2)、Swin-moe、MobileVit(V1-V3)、和Resnet等主流Transformer和CNN类骨干网络，覆盖分类、分割、检测等下游任务的微调应用。同时基于Ascend芯片和MindSpore框架做深度优化适配，集成如MindInsight可视化、分布式并行策略配置、MOE专家系统、Profile性能分析、数据性能调优和Modelarts平台适配等模块，可极大提升开发者使用MindSpore开发大规模预训练模型体验。
+RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研发团队联合打造的一款用于视觉领域的全国产化自监督预训练开发套件，旨在为业界提供高质量的视觉自监督预训练模型库和降低用户开发大规模预训练模型门槛，其中集成业界如MAE、SIMMIM、A2MMIM、SimCLR等主流的视觉自监督预训练架构和专用于遥感领域的RingMo架构，包含Vit、Vit-moe、Swin(V1-V2)、Swin-moe、MobileVit(V1-V3)、和Resnet等主流Transformer和CNN类骨干网络，覆盖分类、分割、检测等下游任务的微调应用。同时基于Ascend芯片和MindSpore框架做深度优化适配，集成如MindInsight可视化、分布式并行策略配置、MOE专家系统、Profile性能分析、数据性能调优和Modelarts平台适配等模块，可极大提升开发者使用MindSpore开发大规模预训练模型体验。
 ## 主要特性
 * **【无标签预训练】**: 集成所有架构均采用无监督预训练方式，无需数据标注成本，支持任意类型图片进行无监督学习
 * **【大规模参数扩充】**: 集成Moe稀疏专家系统，为用户提供丰富的模型参数扩充策略，轻松实现百亿/千亿+大规模预训练模型的分布式训练
