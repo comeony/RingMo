@@ -58,7 +58,7 @@ do
     cp ../*.py ./eval_parallel$i
     cp *.sh ./eval_parallel$i
     cp -r ../config ./eval_parallel$i
-    cp -r ../ringmo_framework ./pretrain_parallel$i
+    cp -r ../ringmo_framework ./eval_parallel$i
     cp -r ../register ./eval_parallel$i
     cd ./eval_parallel$i || exit
     echo "start training for rank $RANK_ID, device $DEVICE_ID"
