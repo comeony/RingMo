@@ -14,6 +14,10 @@ auto_tune: True  # dataset performance
 filepath_prefix: "./autotune"
 autotune_per_step: 10
 
+model:
+  patch_type: 'pi_conv'
+  use_lbp: False
+
 pretrain_dataset:
   data_type: "custom"
   data_path: "/data/imageNet-1k"
