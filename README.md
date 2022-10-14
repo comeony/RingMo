@@ -10,6 +10,15 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
 * **【低成本迁移微调】**: 端到端打通模型预训练到微调流程，支持主流视觉Backbone的微调分类验证及分割、检测等复杂下游任务的迁移学习
 * **【工具丰富】**: 集成MindInsight、Profile、AutoTune、图算融合和AICC Tools，轻松实现模型训练和性能的可视化分析、数据加载性能的自动调优，网络算子自动融合加速和人工智能计算中心分布式集群训练自动适配等，充分使能MindSpore大规模调试调优和训练加速能力
 
+## 已支持模型
+
+| Arch  | BackBone |
+| :---: | :------: |
+| RingMo | Swin |
+| SimMIM | Vit |
+| _ | Swin |
+| MAE | Vit |
+
 ## 套件架构
 
 ![套件架构设计](repo/img.png)
