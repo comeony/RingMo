@@ -58,7 +58,7 @@ do
     cp ../*.py ./finetune_parallel$i
     cp *.sh ./finetune_parallel$i
     cp -r ../config ./finetune_parallel$i
-    cp -r ../ringmo_framework ./pretrain_parallel$i
+    cp -r ../ringmo_framework ./finetune_parallel$i
     cp -r ../register ./finetune_parallel$i
     cd ./finetune_parallel$i || exit
     echo "start training for rank $RANK_ID, device $DEVICE_ID"
