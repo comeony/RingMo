@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +38,7 @@ class SwinTransformerForRingMo(SwinTransformer):
         self.hw = int(self.final_seq ** 0.5)
 
     def construct(self, x, mask):
+        """construct of SwinTransformerForRingMo"""
         # pylint: disable=W0221
         x = self.multi(x, self.sub(1, mask))
         x = self.patch_embed(x)
@@ -74,6 +77,7 @@ class VisionTransformerForRingMo(Vit):
         self.slice = P.Slice().shard(((dp, 1, 1),))
 
     def construct(self, x, mask):
+        """construct of VisionTransformerForRingMo"""
         # pylint: disable=W0221
         x = self.multi(x, self.sub(1, mask))
         x = self.patch_embed(x)

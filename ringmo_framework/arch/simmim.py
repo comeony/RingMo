@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +45,7 @@ class SwinTransformerForSimMIM(SwinTransformer):
         self.hw = int(self.final_seq ** 0.5)
 
     def construct(self, x, mask):
+        """construct of SwinTransformerForSimMIM"""
         # pylint: disable=W0221
         x = self.patch_embed(x)
         batch, seq, _ = x.shape
@@ -99,6 +102,7 @@ class VisionTransformerForSimMIM(Vit):
         return super().no_weight_decay() | {'mask_token'}
 
     def construct(self, x, mask):
+        """construct of VisionTransformerForSimMIM"""
         # pylint: disable=W0221
         x = self.patch_embed(x)
 

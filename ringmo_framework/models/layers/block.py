@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,9 +54,9 @@ class Roll(nn.Cell):
         # pylint: disable=W0613
         super(Roll, self).__init__()
         if parallel_config:
-            dp = parallel_config.data_parallel
+            dp = parallel_config.data_parallel  # pylint: disable=W0612
         else:
-            dp = 1
+            dp = 1  # pylint: disable=W0612
         self.roll = nn.Roll(to_2tuple(shift_size), shift_axis)
 
     def construct(self, x):

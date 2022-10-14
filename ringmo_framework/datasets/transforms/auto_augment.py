@@ -1,4 +1,6 @@
 # Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +26,10 @@ AugMix adapted from:
     https://github.com/google-research/augmix
 
 Papers:
-    AutoAugment: Learning Augmentation Policies from Data - https://arxiv.org/abs/1805.09501.
-    Learning Data Augmentation Strategies for Object Detection - https://arxiv.org/abs/1906.11172.
-    RandAugment: Practical automated data augmentation... - https://arxiv.org/abs/1909.13719.
-    AugMix: A Simple Data Processing Method to Improve Robustness and Uncertainty - https://arxiv.org/abs/1912.02781
+    AutoAugment: Learning Augmentation Policies from Data - https://arxiv.org/abs/1805.09501 .
+    Learning Data Augmentation Strategies for Object Detection - https://arxiv.org/abs/1906.11172 .
+    RandAugment: Practical automated data augmentation... - https://arxiv.org/abs/1909.13719 .
+    AugMix: A Simple Data Processing Method to Improve Robustness and Uncertainty - https://arxiv.org/abs/1912.02781 .
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
@@ -485,7 +487,7 @@ def auto_augment_policy_v0r(hparams):
 
 def auto_augment_policy_original(hparams):
     """auto_augment_policy_original"""
-    # ImageNet policy from https://arxiv.org/abs/1805.09501.
+    # ImageNet policy from https://arxiv.org/abs/1805.09501 .
     policy = [
         [('PosterizeOriginal', 0.4, 8), ('Rotate', 0.6, 9)],
         [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
