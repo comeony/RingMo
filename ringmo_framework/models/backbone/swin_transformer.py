@@ -54,7 +54,7 @@ class PatchMerging(nn.Cell):
         self.reduction = Linear(
             in_channels=4 * dim, out_channels=2 * dim, has_bias=False, weight_init=weight_init).to_float(mstype.float16)
         self.reduction.shard(strategy_matmul=((dp, mp), (mp, 1)), strategy_bias=((dp, 1), (1,)))
-        self.norm = norm_layer([dim * 4, ], eps=1e-4)
+        self.norm = norm_layer([dim * 4,], eps=1e-4)
         self.norm.shard(((dp, 1, 1),))
         self.h, self.w = self.input_resolution
         self.h_2, self.w_2 = self.h // 2, self.w // 2
@@ -83,22 +83,7 @@ class PatchMerging(nn.Cell):
 
 
 class SwinBasicLayer(nn.Cell):
-    """ A basic Swin Transformer layer for one stage.
-
-    Args:
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        window_size (int): Local window size.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
-        drop (float, optional): Dropout rate. Default: 0.0
-        attn_drop (float, optional): Attention dropout rate. Default: 0.0
-        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Cell, optional): Normalization layer. Default: nn.LayerNorm/_LayerNorm
-        downsample (nn.Cell | None, optional): Downsample layer at the end of the layer. Default: None
+    """ Swin Basic Layer
     """
 
     def __init__(self, dim, input_resolution, depth, num_heads, window_size,
@@ -150,28 +135,7 @@ class SwinBasicLayer(nn.Cell):
 
 
 class SwinTransformer(nn.Cell):
-    """ Swin Transformer
-        A Pynp impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
-          https://arxiv.org/pdf/2103.14030
-
-    Args:
-        image_size (int | tuple(int)): Input image size. Default 224
-        patch_size (int | tuple(int)): Patch size. Default: 4
-        in_chans (int): Number of input image channels. Default: 3
-        num_classes (int): Number of classes for classification head. Default: 1000
-        embed_dim (int): Patch embedding dimension. Default: 96
-        depths (tuple(int)): Depth of each Swin Transformer layer.
-        num_heads (tuple(int)): Number of attention heads in different layers.
-        window_size (int): Window size. Default: 7
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 4
-        qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float): Override default qk scale of head_dim ** -0.5 if set. Default: None
-        drop_rate (float): Dropout rate. Default: 0
-        attn_drop_rate (float): Attention dropout rate. Default: 0
-        drop_path_rate (float): Stochastic depth rate. Default: 0.1
-        norm_layer (nn.Cell): Normalization layer. Default: nn.LayerNorm/_LayerNorm.
-        ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
-        patch_norm (bool): If True, add normalization after patch embedding. Default: True
+    """ Swin Transformer Model
     """
 
     def __init__(self, batch_size=None, image_size=224, patch_size=4, in_chans=3, num_classes=1000,
@@ -243,7 +207,7 @@ class SwinTransformer(nn.Cell):
                 self.final_seq = self.final_seq // 4
             self.layers.append(layer)
 
-        self.norm = norm_layer([self.num_features, ], eps=1e-6).shard(((dp, 1, 1),))
+        self.norm = norm_layer([self.num_features,], eps=1e-6).shard(((dp, 1, 1),))
         self.transpose = P.Transpose().shard(((dp, 1, 1),))
         self.avgpool = P.ReduceMean(keep_dims=False).shard(((dp, 1, 1),))
         self.init_weights()
@@ -292,6 +256,7 @@ class SwinTransformer(nn.Cell):
 
 class FinetuneSwin(nn.Cell):
     """finetune swim"""
+
     def __init__(self, **kwargs):
         super(FinetuneSwin, self).__init__()
         self.encoder = SwinTransformer(**kwargs)
@@ -367,5 +332,6 @@ def build_swin(config):
         drop_rate=config.model.drop_rate,
         drop_path_rate=config.model.drop_path_rate,
         ape=config.model.ape,
-        patch_norm=config.model.patch_norm)
+        patch_norm=config.model.patch_norm,
+        patch_type=config.model.patch_type)
     return model
