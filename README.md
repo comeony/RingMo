@@ -34,8 +34,27 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
 * 准备数据
 
   ```shell
-  # 准备图片索引路径的json文件
-  python get_image_ids.py --image IMAGE_PATH_DIR --file JSON_FILE_NAME
+  # 准备图片索引路径的json文件，如下方目录中的train_ids.json
+  python ringmo_framework/datasets/tools/get_image_ids.py --image IMAGE_PATH_DIR --file JSON_FILE_NAME
+  ```
+
+  ```text
+  imageNet-1k/
+  ├───train/
+  |  ├───n01440764/
+  |  |  ├───n01440764_10026.JPEG
+  |  |  ├───n01440764_10027.JPEG
+  |  |  ├───...
+  |  ├───n01443537/
+  |  ├───...
+  ├───val/
+  |  ├───n01440764/
+  |  |  ├───n01440764_10026.JPEG
+  |  |  ├───n01440764_10027.JPEG
+  |  |  ├───...
+  |  ├───n01443537/
+  |  ├───...
+  └───train_ids.json
   ```
 
 * 预训练
@@ -70,7 +89,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   python eval.py --config CONFIG_PATH --use_parallel False
   # 分布式评估
   cd scripts
-  sh eval_distribute.sh RANK_TABILE_FILE CONFIG_FILE # 执行分布式评估
+  sh eval_distribute.sh RANK_TABILE_FILE CONFIG_FILE CHECKPOINT_FILE # 执行分布式评估
   ```
 
 * 下游任务迁移（待开放）

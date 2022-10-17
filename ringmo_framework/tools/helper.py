@@ -29,7 +29,7 @@ import aicc_tools as ac
 def build_context(args):
     """build context"""
     profile_cb = None
-    if args.train_config.profile and args.use_parallel:
+    if args.profile and args.use_parallel:
         cfts_1 = ac.CFTS(**args.aicc_config)
         profile_cb = cfts_1.profile_monitor(start_step=1, stop_step=5)
 
@@ -52,7 +52,7 @@ def build_context(args):
         args.parallel["strategy_ckpt_load_file"] = cfts.get_checkpoint(args.parallel.get("strategy_ckpt_load_file"))
         context.set_auto_parallel_context(strategy_ckpt_load_file=args.parallel["strategy_ckpt_load_file"])
 
-    if args.train_config.profile and not args.use_parallel:
+    if args.profile and not args.use_parallel:
         cfts_2 = ac.CFTS(**args.aicc_config)
         profile_cb = cfts_2.profile_monitor(start_step=1, stop_step=5)
     return cfts, profile_cb
