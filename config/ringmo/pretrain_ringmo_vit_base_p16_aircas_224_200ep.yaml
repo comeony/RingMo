@@ -49,6 +49,11 @@ lr_schedule:
   warmup_lr: 0.0000005
   warmup_epochs: 20
 
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "pretrain-ringmo-vit-base-p16"
+
 aicc_config:
   obs_path: "Input your obs path if code is running on modelarts else invalid."
   upload_frequence: 1

@@ -1,6 +1,6 @@
 # RingMo-Framework
 
-RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研发团队联合打造的一款用于视觉领域的全国产化自监督预训练开发套件，旨在为业界提供高质量的视觉自监督预训练模型库和降低用户开发大规模预训练模型门槛，其中集成业界如MAE、SIMMIM、A2MMIM、SimCLR等主流的视觉自监督预训练架构和专用于遥感领域的RingMo架构，包含Vit、Vit-moe、Swin(V1-V2)、Swin-moe、MobileVit(V1-V3)、和Resnet等主流Transformer和CNN类骨干网络，覆盖分类、分割、检测等下游任务的微调应用。同时基于Ascend芯片和MindSpore框架做深度优化适配，集成如MindInsight可视化、分布式并行策略配置、MOE专家系统、Profile性能分析、数据性能调优和Modelarts平台适配等模块，可极大提升开发者使用MindSpore开发大规模预训练模型体验。
+RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研发团队联合打造的一款用于视觉领域的全国产化自监督预训练开发套件，旨在为业界提供高质量的视觉自监督预训练模型库和降低用户开发大规模预训练模型门槛，其中集成业界如MAE、SIMMIM、SimCLR等主流的视觉自监督预训练架构和专用于遥感领域的RingMo架构，包含Vit、Vit-moe、Swin(V1-V2)、Swin-moe等主流Transformer骨干网络，覆盖分类、分割、检测等下游任务的微调应用。同时基于Ascend芯片和MindSpore框架做深度优化适配，集成如MindInsight可视化、分布式并行策略配置、MOE专家系统、Profile性能分析、数据性能调优和Modelarts平台适配等模块，可极大提升开发者使用MindSpore开发大规模预训练模型体验。
 
 ## 主要特性
 
@@ -10,14 +10,25 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
 * **【低成本迁移微调】**: 端到端打通模型预训练到微调流程，支持主流视觉Backbone的微调分类验证及分割、检测等复杂下游任务的迁移学习
 * **【工具丰富】**: 集成MindInsight、Profile、AutoTune、图算融合和AICC Tools，轻松实现模型训练和性能的可视化分析、数据加载性能的自动调优，网络算子自动融合加速和人工智能计算中心分布式集群训练自动适配等，充分使能MindSpore大规模调试调优和训练加速能力
 
-## 已支持模型
+## 支持模型
 
 | Arch  | BackBone |
 | :---: | :------: |
-| RingMo | Swin |
-| SimMIM | Vit |
-| _ | Swin |
+| RingMo | Vit/Swin |
+| SimMIM | Vit/Swin |
 | MAE | Vit |
+
+## 支持特性
+
+| 特性  | 是否支持 |
+| :---: | :------: |
+| 并行配置 | 是 |
+| Mindinsight可视化 | 是 |
+| AICC平台适配 | 是 |
+| Profile性能分析 | 是 |
+| AutoTune | 是 |
+| 图算融合 | 是 |
+| MOE | 尚未开源 |
 
 ## 套件架构
 
@@ -39,7 +50,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   ```
 
   ```text
-  imageNet-1k/
+  imagenet-1k/
   ├───train/
   |  ├───n01440764/
   |  |  ├───n01440764_10026.JPEG
@@ -54,7 +65,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   |  |  ├───...
   |  ├───n01443537/
   |  ├───...
-  └───train_ids.json
+  └───train_ids.json # 存储图片路径列表的json文件--> ["imagenet-1k/train/n01440764/n01440764_10026.JPEG"]
   ```
 
 * 预训练
@@ -67,7 +78,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   cd ringmo-framework/
   python ringmo_framework/tools/hccl_tools.py --device_num [0,8] # 生成分布式训练所需的RANK_TABLE_FILE，后面可跳过
   cd scripts
-  sh pretrain_distribute.sh RANK_TABILE_FILE CONFIG_FILE # 执行分布式预训练
+  sh pretrain_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE # 执行分布式预训练
   ```
 
 * 分类微调
@@ -78,7 +89,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   python finetune.py --config CONFIG_PATH --use_parallel False
   # 分布式微调
   cd scripts
-  sh finetune_distribute.sh RANK_TABILE_FILE CONFIG_FILE # 执行分布式微调
+  sh finetune_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE # 执行分布式微调
   ```
 
 * 分类评估
@@ -89,36 +100,28 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   python eval.py --config CONFIG_PATH --use_parallel False
   # 分布式评估
   cd scripts
-  sh eval_distribute.sh RANK_TABILE_FILE CONFIG_FILE CHECKPOINT_FILE # 执行分布式评估
+  sh eval_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE CHECKPOINT_FILE # 执行分布式评估
   ```
 
 * 下游任务迁移（待开放）
 
   ```shell
   # 安装ringmo-framework库
-  pip install ringmo-framework
+  pip install ringmo_framework
   ```
 
   ```python
   # 以使用MAE-Vit-Base-P16-img-224的预训练权重为例进行复杂下游任务迁移学习
-  from ringmo-framework.models.backbone.Vit import vit_base_p16
-  from ringmo-framework.tools import load_checkpoint
+  from ringmo_framework.models.backbone.Vit import vit_base_p16
+  from ringmo_framework.tools import load_checkpoint
   # 在目标检测网络Faster-RCNN中，使用ringmo-framework的vit_base_p16替换原有的resnet模型作为backbone
   ...
   self.backbone = vit_base_p16(**kwargs)
   ...
   ```
 
-### 使用说明
+## 参与贡献
 
-1. 分布式shell脚本默认使用8卡进行训练和推理，若不使用8卡，需修改脚本中的START_DEVICE、END_DEVICE和RANK_SIZE，如使用设备2、3
-   进行双卡训练，需设置START_DEVICE=2、END_DEVICE=3、RANK_SIZE=2，且需使用hccl_tools.py生成对应的RANK_TABLE_FILE
-2. 使用hccl_tools.py生成RANK_TABLE_FILE时，device_num的参数区间左包含右不包含，如使用设备2、3进行双卡训练，device_num为[2,4]
-3. CONFIG_FILE存放在./config下，使用时可以根据需要修改学习率等参数
+## 许可证
 
-### 参与贡献
-
-1. Fork 本仓库
-2. 新建 Feat_xxx 分支
-3. 提交代码
-4. 新建 Pull Request
+[Apache License 2.0](https://gitee.com/mindspore/ringmo-framework/blob/master/LICENSE)

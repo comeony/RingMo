@@ -47,13 +47,11 @@ lr_schedule:
   min_lr: 0.00001
   warmup_lr: 0.000001
   warmup_epochs: 10
-#  lr_type: "warmup_multistep_decay"
-#  base_lr: 0.0001
-#  min_lr: 0.0000005
-#  warmup_lr: 0.0000005
-#  warmup_epochs: 10
-#  multi_steps: [ 100, ]
-#  factor: 10
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "pretrain-simmim-swin-base-p4-w6-192"
 
 aicc_config:
   obs_path: "Input your obs path if code is running on modelarts else invalid."

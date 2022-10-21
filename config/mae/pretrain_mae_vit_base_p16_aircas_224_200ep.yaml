@@ -26,7 +26,7 @@ train_config:
   epoch: 800
   batch_size: 64
   image_size: 224
-  per_epoch_size: 1
+  per_epoch_size: 0
 
 # optimizer
 optimizer:
@@ -43,6 +43,14 @@ lr_schedule:
   min_lr: 0.
   warmup_lr: 0.
   warmup_epochs: 40
+
+train_wrapper:
+  use_clip_grad: False
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "pretrain-mae-vit-base-p16"
 
 aicc_config:
   obs_path: "Input your obs path if code is running on modelarts else invalid."
