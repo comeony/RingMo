@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +34,7 @@ STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
 
 
 class ImageLoader:
+    """ImageLoader of datasets"""
     def __init__(self, opt_ids, data_dir=None):
         """Loading image files as a dataset generator."""
         opt_path = os.path.join(data_dir, opt_ids)

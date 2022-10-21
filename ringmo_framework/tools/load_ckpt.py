@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,14 +181,14 @@ def remap_pretrained_keys_swin(state_dict, checkpoint_model, logger):
 def remap_pretrained_keys_vit(model, checkpoint_model, num_layers, logger):
     """remap pretrained keys vit"""
     # Duplicate shared rel_pos_bias to each layer
-    if getattr(model, 'encoder.use_rel_pos_bias', False) and \
-            "encoder.rel_pos_bias.relative_position_bias_table" in checkpoint_model:
+    if getattr(model, 'encoder.encoder.use_rel_pos_bias', False) and \
+            "encoder.encoder.rel_pos_bias.relative_position_bias_table" in checkpoint_model:
         logger.info("Expand the shared relative position embedding to each transformer block.")
-    rel_pos_bias = checkpoint_model["encoder.rel_pos_bias.relative_position_bias_table"]
-    rpbt_keys = "encoder.encoder.blocks.%d.attention.relative_position_bias.relative_position_bias_table"
-    for i in range(num_layers):
-        checkpoint_model[rpbt_keys % i] = rel_pos_bias.clone()
-    checkpoint_model.pop("encoder.rel_pos_bias.relative_position_bias_table")
+        rel_pos_bias = checkpoint_model["encoder.encoder.rel_pos_bias.relative_position_bias_table"]
+        rpbt_keys = "encoder.encoder.blocks.%d.attention.relative_position_bias.relative_position_bias_table"
+        for i in range(num_layers):
+            checkpoint_model[rpbt_keys % i] = rel_pos_bias.clone()
+        checkpoint_model.pop("encoder.encoder.rel_pos_bias.relative_position_bias_table")
 
     # Geometric interpolation when pre-trained patch size mismatch with fine-tuned patch size
     all_keys = list(checkpoint_model.keys())

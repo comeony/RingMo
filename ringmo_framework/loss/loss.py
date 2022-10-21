@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +23,7 @@ from mindspore.ops import functional as F
 
 
 class L1Loss(nn.Cell):
+    """L1 loss"""
     def __init__(self, reduction='mean', parallel_config=None):
         super(L1Loss, self).__init__()
 
@@ -51,6 +54,7 @@ class L1Loss(nn.Cell):
         return perm
 
     def get_loss(self, x, weights=1.0):
+        """get loss of L1loss"""
         input_dtype = x.dtype
         x = self.cast(x, mstype.float32)
         weights = self.cast(weights, mstype.float32)
@@ -68,6 +72,7 @@ class L1Loss(nn.Cell):
         return self.get_loss(x)
 
 class MSELoss(nn.Cell):
+    """MSE Loss"""
     def __init__(self, parallel_config, norm_pixel_loss=True):
         super(MSELoss, self).__init__()
         if parallel_config:
@@ -90,6 +95,7 @@ class MSELoss(nn.Cell):
         self.norm_pixel_loss = norm_pixel_loss
 
     def construct(self, pred, target, mask):
+        """construct of MSELoss"""
         pred = self.cast(pred, mstype.float32)
         target = self.cast(target, mstype.float32)
         mask = self.cast(mask, mstype.float32)

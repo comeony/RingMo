@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,9 +61,12 @@ class StateMonitor(Callback):
         self.loss = loss
 
     def epoch_begin(self, run_context):
+        # pylint: disable=W0613
         self.epoch_time = time.time()
 
     def epoch_end(self, run_context):
+        # pylint: disable=W0613
+        """epoch end of StateMonitor"""
         epoch_seconds = (time.time() - self.epoch_time)
         per_step_seconds = epoch_seconds / self.data_size
 

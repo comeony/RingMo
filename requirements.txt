@@ -1,0 +1,5 @@
+aicc_tools
+yaml
+pillow
+mindspore>=1.7
+mindinsight

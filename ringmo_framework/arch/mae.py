@@ -1,4 +1,6 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022 Aerospace Information Research Institute,
+# Chinese Academy of Sciences.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,8 +57,9 @@ class VisionTransformerForMae(Vit):
             self.init_weights_pos()
 
     def init_weights_pos(self):
+        """init_weights_pos of VisionTransformerForMae"""
         encoder_pos_emd = Tensor(
-            get_2d_sincos_pos_embed(self.pos_embed.shape[-1],
+            get_2d_sincos_pos_embed(self.pos_embed.shape[-1],  # pylint: disable=E0203
                                     int(self.num_patches ** .5),
                                     cls_token=True),
             mstype.float32
@@ -66,6 +69,7 @@ class VisionTransformerForMae(Vit):
         self.pos_embed = Parameter(encoder_pos_emd, name='sincos_pos_embedding', requires_grad=False)
 
     def construct(self, img, unmask_index):
+        """construct of VisionTransformerForMae"""
         # pylint: disable=W0221
         # patch to encoder tokens and add positions
         tokens = self.patch_embed(img)
