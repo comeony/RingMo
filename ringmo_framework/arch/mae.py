@@ -15,6 +15,8 @@
 # limitations under the License.
 # ============================================================================
 """MAE of ringmo-framework"""
+import os
+
 from mindspore import nn
 import mindspore.numpy as np
 from mindspore import Tensor
@@ -175,6 +177,8 @@ class Mae(nn.Cell):
         self.images_summary = P.ImageSummary().shard(((dp, 1, 1, 1),))
 
         self.init_weights()
+        self.allreduce = P.AllReduce()
+        self.device_num = int(os.getenv("RANK_SIZE", "1"))
 
     def init_weights(self):
         """init weights"""
@@ -217,7 +221,8 @@ class Mae(nn.Cell):
         """construct of mae"""
         _, c, h, w = imgs.shape
         input_image = self.stride_slice4d(imgs, (0, 0, 0, 0), (1, c, h, w), (1, 1, 1, 1))
-        self.images_summary("input images", input_image)
+        # self.images_summary("input images", input_image)
+        self.images_summary("input images", input_image.transpose(0, 2, 3, 1))
 
         # tokens encoder
         mask = self.gather1(mask, 1, ids_restore)
@@ -266,7 +271,7 @@ class Mae(nn.Cell):
         self.images_summary("reconstruct image", reconstruct_image)
 
         mae_loss = self.mse_loss(pred, patches, mask)
-
+        mae_loss = self.allreduce(mae_loss) / self.device_num
         return mae_loss
 
 

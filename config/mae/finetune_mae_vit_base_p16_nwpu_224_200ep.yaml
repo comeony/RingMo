@@ -7,12 +7,17 @@ base_config: [
   '../base/modelarts/aicc.yaml',
   '../base/__base__.yaml']
 
-arch: "simmim"
+arch: "mae"
 use_parallel: True
 profile: False
 auto_tune: True  # dataset performance
 filepath_prefix: "./autotune"
 autotune_per_step: 10
+
+model:
+    init_values:
+    use_abs_pos_emb: True
+    use_rel_pos_bias: False  # if set window size, it's True
 
 finetune_dataset:
   train_path: "/home/linbert/work/chinakevin/pretrain_chinakevin/Dataset/NWPU_RESISC45/train"
@@ -45,7 +50,7 @@ optimizer:
 
 # lr sechdule
 lr_schedule:
-  lr_type: "warmup_cosine_decay_simmim"
+  lr_type: "warmup_cosine_decay"
   base_lr: 0.00125
   min_lr: 0.00000025
   warmup_lr: 0.00000025

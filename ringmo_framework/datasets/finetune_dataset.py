@@ -31,7 +31,7 @@ import mindspore.dataset.transforms.c_transforms as C2
 
 from ringmo_framework.datasets.transforms.mixup import Mixup
 from ringmo_framework.datasets.transforms.random_erasing import RandomErasing
-from ringmo_framework.datasets.transforms.aug_policy import ImageNetPolicyV2
+from ringmo_framework.datasets.transforms.auto_augment import rand_augment_transform
 from ringmo_framework.datasets.utils import _check_finetune_dataset_config
 
 warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
@@ -135,8 +135,8 @@ def build_transforms(config, interpolation, is_train=True):
                                           contrast=config.color_jitter,
                                           saturation=config.color_jitter)]
         else:
-            trans += [ImageNetPolicyV2()]
-            # trans += [rand_augment_transform(auto_augment, aa_params)]
+            # trans += [ImageNetPolicyV2()]
+            trans += [rand_augment_transform(config.auto_augment, aa_params)]
 
         trans += [
             P.ToTensor(),

@@ -22,6 +22,7 @@ from mindspore import nn
 
 from ringmo_framework.lr.lr_schedule import LearningRateWiseLayer
 from .optimizer import AdamWeightDecayOp
+from .optimizer import FP32StateAdamWeightDecay
 
 
 def build_optim(config, model, lr, logger, is_pretrain=True):
@@ -63,6 +64,13 @@ def build_pretrain_optimizer(config, model, lr, logger):
                                       eps=optimizer_config.eps,
                                       beta1=optimizer_config.beta1,
                                       beta2=optimizer_config.beta2)
+    elif optimizer_config.optim_name == "FP32AdamWOP":
+        optimizer = FP32StateAdamWeightDecay(group_parameters,
+                                             learning_rate=lr,
+                                             weight_decay=optimizer_config.weight_decay,
+                                             eps=optimizer_config.eps,
+                                             beta1=optimizer_config.beta1,
+                                             beta2=optimizer_config.beta2)
     else:
         raise NotImplementedError
     return optimizer
