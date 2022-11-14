@@ -97,7 +97,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   ```shell
   # 单卡评估
   cd ringmo-framework/
-  python eval.py --config CONFIG_PATH --use_parallel False
+  python eval.py --config CONFIG_PATH --eval_path CHECKPOINT_FILE --use_parallel False
   # 分布式评估
   cd scripts
   sh eval_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE CHECKPOINT_FILE # 执行分布式评估

@@ -15,4 +15,4 @@
 # limitations under the License.
 # ============================================================================
 """register of ringmo"""
-from .config import RingMoConfig
+from .config import RingMoConfig, ActionDict

@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--file', default=None, help='json file name')
 
     args_ = parser.parse_args()
-    if args_.image_path is not None and args_.file_name is not None:
-        input_image_path = args_.image_path
-        input_file_name = args_.file_name
+    if args_.image is not None and args_.file is not None:
+        input_image_path = args_.image
+        input_file_name = args_.file
         main(input_image_path, input_file_name)

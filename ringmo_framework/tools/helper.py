@@ -15,6 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """helper of ringmo"""
+import os
 import sys
 import yaml
 import numpy as np
@@ -33,6 +34,7 @@ def build_context(args):
         cfts_1 = ac.CFTS(**args.aicc_config)
         profile_cb = cfts_1.profile_monitor(start_step=1, stop_step=5)
 
+    args.seed = int(os.getenv("RANK_ID", "0")) + args.seed
     local_rank, device_num = ac.context_init(seed=args.seed, use_parallel=args.use_parallel,
                                              context_config=args.context, parallel_config=args.parallel)
     context.set_context(max_device_memory="30GB")

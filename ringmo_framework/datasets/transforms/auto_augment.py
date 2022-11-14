@@ -287,7 +287,7 @@ LEVEL_TO_ARG = {
     'Contrast': lh.enhance_level_to_arg,
     'ContrastIncreasing': lh.enhance_increasing_level_to_arg,
     'Brightness': lh.enhance_level_to_arg,
-    'BrightnessIncreasing': _enhance_increasing_level_to_arg,
+    'BrightnessIncreasing': lh.enhance_increasing_level_to_arg,
     'Sharpness': lh.enhance_level_to_arg,
     'SharpnessIncreasing': lh.enhance_increasing_level_to_arg,
     'ShearX': lh.shear_level_to_arg,

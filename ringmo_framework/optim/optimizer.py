@@ -22,6 +22,7 @@ from mindspore.common.initializer import initializer
 from mindspore import Tensor
 from mindspore import Parameter, ParameterTuple
 from mindspore.nn import Optimizer
+from mindspore.nn import AdamWeightDecay
 
 _adam_opt = ops.MultitypeFuncGraph("adam_opt")
 host_assign = ops.Assign()
@@ -52,6 +53,7 @@ def _update_run_kernel(opt, beta1, beta2, eps, lr, weight_decay, param, m, v, gr
 
 class AdamWeightDecayOp(Optimizer):
     """adam weight decay op"""
+
     def __init__(self, params, learning_rate=1e-3, beta1=0.9, beta2=0.999, eps=1e-6, weight_decay=0.0):
         super(AdamWeightDecayOp, self).__init__(learning_rate, params, weight_decay)
         self.beta1 = Tensor(np.array([beta1]).astype(np.float32))
@@ -98,6 +100,42 @@ class AdamWeightDecayOp(Optimizer):
             new_state.requires_aggr = old_param.requires_aggr
             if old_param.cache_shape:
                 new_state.cache_shape = old_param.cache_shape
+            new_state.name = prefix + '.' + new_state.name
+            new.append(new_state)
+        return ParameterTuple(new)
+
+
+class FP32StateAdamWeightDecay(AdamWeightDecay):
+    r"""
+        This class is almost same with the mindspore's AdamWeightDecay implements, the
+        only difference is the optimizer's state will be always initialized with float32,
+        where the original AdamWeightDecay will initialize the optimizer's state with float16,
+        if the parameters are initialized with fp16.
+        This setting will avoid overflow in training PanGu-Alpha model using fp16.
+    """
+
+    def __init__(self, params, learning_rate=1e-3, beta1=0.9, beta2=0.999, eps=1e-6, weight_decay=0.0):
+        super(FP32StateAdamWeightDecay, self).__init__(params, learning_rate=learning_rate,
+                                                       beta1=beta1,
+                                                       beta2=beta2,
+                                                       eps=eps,
+                                                       weight_decay=weight_decay)
+
+        self.moments1 = self.clone_state(self.parameters, prefix='adam_m', init='zeros')
+        self.moments2 = self.clone_state(self.parameters, prefix='adam_v', init='zeros')
+
+    def clone_state(self, parameter_tuple, prefix, init):
+        r"""
+            parameter_tuple: ParameterTuple. The parameters of the network
+            prefix: str. The prefix name of the parameters
+            init: str. The initialization method
+        """
+        new = []
+        for old_param in parameter_tuple:
+            new_state = Parameter(initializer(init, shape=old_param.shape, dtype=mstype.float32))
+            new_state.param_info = old_param.param_info.clone()
+            new_state.is_init = False
+            new_state.set_data(initializer(init, shape=old_param.shape, dtype=mstype.float32))
             new_state.name = prefix + '.' + new_state.name
             new.append(new_state)
         return ParameterTuple(new)
