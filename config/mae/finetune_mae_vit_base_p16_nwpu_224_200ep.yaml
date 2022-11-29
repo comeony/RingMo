@@ -20,6 +20,7 @@ model:
     use_rel_pos_bias: False  # if set window size, it's True
 
 finetune_dataset:
+  data_type: "custom"
   train_path: "/home/linbert/work/chinakevin/pretrain_chinakevin/Dataset/NWPU_RESISC45/train"
   eval_path: "/home/linbert/work/chinakevin/pretrain_chinakevin/Dataset/NWPU_RESISC45/val"
   eval_interval: 1
