@@ -78,7 +78,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   cd ringmo-framework/
   python ringmo_framework/tools/hccl_tools.py --device_num [0,8] # 生成分布式训练所需的RANK_TABLE_FILE，后面可跳过
   cd scripts
-  sh pretrain_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE # 执行分布式预训练
+  sh pretrain_distribute.sh RANK_TABLE_FILE CONFIG_PATH [START_DEVICE,END_DEVICE] # 执行分布式预训练，不包含END_DEVICE
   ```
 
 * 分类微调
@@ -89,7 +89,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   python finetune.py --config CONFIG_PATH --use_parallel False
   # 分布式微调
   cd scripts
-  sh finetune_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE # 执行分布式微调
+  sh finetune_distribute.sh RANK_TABLE_FILE CONFIG_PATH [START_DEVICE,END_DEVICE] # 执行分布式微调，不包含END_DEVICE
   ```
 
 * 分类评估
@@ -100,7 +100,7 @@ RingMo-Framework 是由中科院空天信息创新研究院与华为大模型研
   python eval.py --config CONFIG_PATH --eval_path CHECKPOINT_FILE --use_parallel False
   # 分布式评估
   cd scripts
-  sh eval_distribute.sh RANK_TABLE_FILE CONFIG_PATH START_DEVICE END_DEVICE CHECKPOINT_FILE # 执行分布式评估
+  sh eval_distribute.sh RANK_TABLE_FILE CONFIG_PATH [START_DEVICE,END_DEVICE] CKPT_FILE # 执行分布式评估，不包含END_DEVICE
   ```
 
 * 下游任务迁移（待开放）

@@ -14,9 +14,9 @@
 # limitations under the License.
 # ============================================================================
 
-if [ $# != 4 ]
+if [ $# != 3 ]
 then
-  echo "Usage: bash run_distribute_train.sh [RANK_TABLE_FILE] [CONFIG_PATH] [START_DEVICE] [END_DEVICE]"
+  echo "Usage: bash run_distribute_train.sh [RANK_TABLE_FILE] [CONFIG_PATH] [DEVICE_RANGE]"
   exit 1
 fi
 
@@ -30,8 +30,9 @@ get_real_path(){
 
 PATH1=$(get_real_path $1)
 CONFIG_FILE=$(get_real_path $2)
-START_DEVICE=$3
-END_DEVICE=$4
+DEVICE_RANGE=$3
+START_DEVICE=${DEVICE_RANGE:1:1}
+END_DEVICE=${DEVICE_RANGE:3:1}
 
 if [ ! -f $PATH1 ]
 then
@@ -59,7 +60,7 @@ ulimit -u unlimited
 export RANK_SIZE=$(($END_DEVICE - $START_DEVICE + 1))
 export RANK_TABLE_FILE=$PATH1
 
-for((i=${START_DEVICE}; i<=${END_DEVICE}; i++))
+for((i=${START_DEVICE}; i<${END_DEVICE}; i++))
 do
     export DEVICE_ID=${i}
     export RANK_ID=$((i-START_DEVICE))
