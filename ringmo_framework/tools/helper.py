@@ -32,7 +32,8 @@ def build_context(args):
     profile_cb = None
     if args.profile and args.use_parallel:
         cfts_1 = ac.CFTS(**args.aicc_config)
-        profile_cb = cfts_1.profile_monitor(start_step=1, stop_step=5)
+        profile_cb = cfts_1.profile_monitor(start_step=args.profile_start_step, stop_step=args.profile_end_step)
+        args.sink_mode = False
 
     args.seed = int(os.getenv("RANK_ID", "0")) + args.seed
     local_rank, device_num = ac.context_init(seed=args.seed, use_parallel=args.use_parallel,
@@ -56,7 +57,8 @@ def build_context(args):
 
     if args.profile and not args.use_parallel:
         cfts_2 = ac.CFTS(**args.aicc_config)
-        profile_cb = cfts_2.profile_monitor(start_step=1, stop_step=5)
+        profile_cb = cfts_2.profile_monitor(start_step=args.profile_start_step, stop_step=args.profile_end_step)
+        args.sink_mode = False
     return cfts, profile_cb
 
 

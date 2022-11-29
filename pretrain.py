@@ -51,7 +51,7 @@ def main(args):
         args.train_config.per_epoch_size = data_size
 
     args.data_size = data_size
-    args.logger.info("Will be Training epochs:{}， sink_size:{}".format(
+    args.logger.info("Will be Training epochs:{}, sink_size:{}".format(
         new_epochs, args.train_config.per_epoch_size))
     args.logger.info("Create training dataset finish, data size:{}".format(data_size))
 

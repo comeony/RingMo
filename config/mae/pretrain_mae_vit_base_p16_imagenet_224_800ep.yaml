@@ -1,0 +1,63 @@
+base_config: [
+  '../base/context/default_mode.yaml',
+  '../base/datasets/pretrain_dataset.yaml',
+  '../base/models/mae_vit_base_p16.yaml',
+  '../base/schedules/default_schedule.yaml',
+  '../base/runner/runner.yaml',
+  '../base/modelarts/aicc.yaml',
+  '../base/__base__.yaml']
+
+arch: "mae"
+use_parallel: True
+profile: False
+auto_tune: True  # dataset performance
+filepath_prefix: "./autotune"
+autotune_per_step: 10
+
+model:
+  init_values:
+
+pretrain_dataset:
+  data_type: "custom"
+  data_path: "/data/imageNet-1k"
+  image_ids: "train_ids.json"
+  input_columns: [ "image" ]
+  output_columns: [ "image", "mask", "ids_restore", "unmask_index" ]
+  column_order: [ "image", "mask", "ids_restore", "unmask_index" ]
+  crop_min: 0.2
+  prop: 0.5
+
+train_config:
+  epoch: 800
+  batch_size: 64
+  image_size: 224
+  per_epoch_size: 0
+
+# optimizer
+optimizer:
+  optim_name: "AdamW"
+  beta1: 0.9
+  beta2: 0.95
+  eps: 0.00000001 # 1e-8
+  weight_decay: 0.05
+
+# lr sechdule
+lr_schedule:
+  lr_type: "warmup_cosine_decay"
+  base_lr: 0.00015
+  min_lr: 0.
+  warmup_lr: 0.
+  warmup_epochs: 40
+
+train_wrapper:
+  use_clip_grad: False
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "pretrain-mae-vit-base-p16"
+
+aicc_config:
+  obs_path: "Input your obs path if code is running on modelarts else invalid."
+  upload_frequence: 1
+  keep_last: False

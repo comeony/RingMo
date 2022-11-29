@@ -14,9 +14,9 @@
 # limitations under the License.
 # ============================================================================
 
-if [ $# != 5 ]
+if [ $# != 4 ]
 then
-  echo "Usage: bash run_distribute_train.sh [RANK_TABLE_FILE] [CONFIG_PATH] [START_DEVICE] [END_DEVICE] [CHECKPOINT_PATH]"
+  echo "Usage: bash run_distribute_train.sh [RANK_TABLE_FILE] [CONFIG_PATH] [DEVICE_RANGE] [CKPT_FILE]"
   exit 1
 fi
 
@@ -30,9 +30,10 @@ get_real_path(){
 
 PATH1=$(get_real_path $1)
 CONFIG_FILE=$(get_real_path $2)
-START_DEVICE=$3
-END_DEVICE=$4
-CHECKPOINT_PATH=$(get_real_path $5)
+DEVICE_RANGE=$3
+START_DEVICE=${DEVICE_RANGE:1:1}
+END_DEVICE=${DEVICE_RANGE:3:1}
+CKPT_FILE=$(get_real_path $4)
 
 if [ ! -f $PATH1 ]
 then
@@ -56,9 +57,9 @@ if [[ ! $END_DEVICE =~ ^[0-9]+$ ]]; then
 exit 1
 fi
 
-if [ ! -f $CHECKPOINT_PATH ]
+if [ ! -f $CKPT_FILE ]
 then
-    echo "error: checkpoint_path=$CHECKPOINT_PATH is not a file"
+    echo "error: checkpoint_path=$CKPT_FILE is not a file"
 exit 1
 fi
 
@@ -66,7 +67,7 @@ ulimit -u unlimited
 export RANK_SIZE=$(($END_DEVICE - $START_DEVICE + 1))
 export RANK_TABLE_FILE=$PATH1
 
-for((i=${START_DEVICE}; i<=${END_DEVICE}; i++))
+for((i=${START_DEVICE}; i<${END_DEVICE}; i++))
 do
     export DEVICE_ID=${i}
     export RANK_ID=$((i-START_DEVICE))
@@ -80,7 +81,7 @@ do
     cd ./eval_parallel$i || exit
     echo "start training for rank $RANK_ID, device $DEVICE_ID"
     env > env.log
-    python eval.py --config=$CONFIG_FILE --eval_path=$CHECKPOINT_PATH &> eval_log &
+    python eval.py --config=$CONFIG_FILE --eval_path=$CKPT_FILE &> eval_log &
     cd ..
 done
 #sleep 1s
