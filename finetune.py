@@ -42,6 +42,7 @@ def main(args):
 
     # train dataset
     args.logger.info(".........Build Training Dataset..........")
+    args.finetune_dataset.train_path = cfts.get_dataset(args.finetune_dataset.train_path)
     train_dataset = build_dataset(args, is_pretrain=False)
     data_size = train_dataset.get_dataset_size()
     new_epochs = args.train_config.epoch
@@ -56,6 +57,7 @@ def main(args):
 
     # evaluation dataset
     args.logger.info(".........Build Eval Dataset..........")
+    args.finetune_dataset.eval_path = cfts.get_dataset(args.finetune_dataset.eval_path)
     eval_dataset = build_dataset(args, is_pretrain=False, is_train=False)
 
     # build context config

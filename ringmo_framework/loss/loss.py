@@ -15,8 +15,11 @@
 # limitations under the License.
 # ============================================================================
 """loss functions"""
+import os
+
 from mindspore import nn
 from mindspore import ops as P
+from mindspore import context
 from mindspore.common import dtype as mstype
 from mindspore.nn.loss.loss import LossBase
 from mindspore.ops import functional as F
@@ -47,6 +50,12 @@ class L1Loss(nn.Cell):
         if reduction == 'none':
             self.reduce = False
 
+        self.is_data_parallel = context.get_auto_parallel_context(
+            "parallel_mode") == context.ParallelMode.DATA_PARALLEL
+        if self.is_data_parallel:
+            self.allreduce = P.AllReduce()
+            self.device_num = int(os.getenv("RANK_SIZE", "1"))
+
     def get_axis(self, x):
         shape = F.shape(x)
         length = F.tuple_len(shape)
@@ -67,9 +76,14 @@ class L1Loss(nn.Cell):
         return x
 
     def construct(self, logits, labels):
+        """construct of L1loss"""
         x_sub = self.sub(logits, labels)
         x = self.abs(x_sub)
-        return self.get_loss(x)
+        x = self.get_loss(x)
+        if self.is_data_parallel:
+            x = self.allreduce(x) / self.device_num
+        return x
+
 
 class MSELoss(nn.Cell):
     """MSE Loss"""
@@ -94,6 +108,12 @@ class MSELoss(nn.Cell):
         self.sum2 = P.ReduceSum(keep_dims=True).shard(((dp, 1, 1),))
         self.norm_pixel_loss = norm_pixel_loss
 
+        self.is_data_parallel = context.get_auto_parallel_context(
+            "parallel_mode") == context.ParallelMode.DATA_PARALLEL
+        if self.is_data_parallel:
+            self.allreduce = P.AllReduce()
+            self.device_num = int(os.getenv("RANK_SIZE", "1"))
+
     def construct(self, pred, target, mask):
         """construct of MSELoss"""
         pred = self.cast(pred, mstype.float32)
@@ -114,6 +134,8 @@ class MSELoss(nn.Cell):
         loss_sum = self.sum(loss_mask)
         mask_sum = self.sum(mask)
         loss = self.divide1(loss_sum, mask_sum)
+        if self.is_data_parallel:
+            loss = self.allreduce(loss) / self.device_num
         return loss
 
     def variance(self, x):
@@ -124,6 +146,7 @@ class MSELoss(nn.Cell):
         x_sum = self.sum2(x_pow, axis)
         x_var = self.divide2(x_sum, x.shape[-1])
         return x_var
+
 
 class SoftTargetCrossEntropy(LossBase):
     """SoftTargetCrossEntropy for MixUp Augment"""
@@ -136,14 +159,24 @@ class SoftTargetCrossEntropy(LossBase):
         self.mul1d = P.Mul()
         self.log_softmax = P.LogSoftmax()
 
+        self.is_data_parallel = context.get_auto_parallel_context(
+            "parallel_mode") == context.ParallelMode.DATA_PARALLEL
+        if self.is_data_parallel:
+            self.allreduce = P.AllReduce()
+            self.device_num = int(os.getenv("RANK_SIZE", "1"))
+
     def construct(self, logit, label):
+        """construct of soft CE"""
         logit = P.Cast()(logit, mstype.float32)
         label = P.Cast()(label, mstype.float32)
         logit_softmax = self.log_softmax(logit)
         neg_target = self.mul1d(label, -1)
         soft_target = self.mul(neg_target, logit_softmax)
         loss = self.sum_ops(soft_target, -1)
-        return self.mean_ops(loss)
+        loss = self.mean_ops(loss)
+        if self.is_data_parallel:
+            loss = self.allreduce(loss) / self.device_num
+        return loss
 
 
 def get_loss(args):

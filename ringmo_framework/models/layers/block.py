@@ -203,10 +203,8 @@ class SwinTransformerBlock(nn.Cell):
             # img_mask: [1, 56, 56, 1] window_size: 7
             mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
             mask_windows = mask_windows.reshape(-1, self.window_size * self.window_size)
+            # mask: [64, 49, 49]
             attn_mask = mask_windows[:, np.newaxis] - mask_windows[:, :, np.newaxis]
-            # [64, 49, 49] ==> [1, 64, 1, 49, 49]
-            attn_mask = np.expand_dims(attn_mask, axis=1)
-            attn_mask = np.expand_dims(attn_mask, axis=0)
             attn_mask = Tensor(np.where(attn_mask == 0, 0., -100.), dtype=mstype.float32)
             self.attn_mask = Parameter(attn_mask, requires_grad=False, name="attention_mask")
             self.roll_pos = Roll(self.shift_size, parallel_config=parallel_config)

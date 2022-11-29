@@ -23,14 +23,13 @@ from PIL import Image
 
 import mindspore.dataset as de
 from mindspore.dataset.vision import Inter
-import mindspore.dataset.vision.c_transforms as C
-from mindspore.dataset.transforms.c_transforms import Compose
+import mindspore.dataset.vision.py_transforms as P
 
-from ringmo_framework.datasets.mask.mask_policy import MaskPolicyForSim, MaskPolicyForMae, MaskPolicyForPIMask
 from ringmo_framework.datasets.utils import _check_pretrain_dataset_config
+from ringmo_framework.datasets.mask.mask_policy import MaskPolicyForSim, MaskPolicyForMae, MaskPolicyForPIMask
 
-MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
-STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
+MEAN = [0.485, 0.456, 0.406]
+STD = [0.229, 0.224, 0.225]
 
 
 class ImageLoader:
@@ -56,29 +55,54 @@ class ImageLoader:
 
 
 def build_dataset(args):
+    """build dataset"""
     if args.input_columns is None:
         args.input_columns = ["image"]
-    dataset = de.GeneratorDataset(
-        source=ImageLoader(args.image_ids, data_dir=args.data_path),
-        column_names=args.input_columns, num_shards=args.device_num,
-        shard_id=args.local_rank, shuffle=args.shuffle,
-        num_parallel_workers=args.num_workers,
-        python_multiprocessing=args.python_multiprocessing)
+
+    data_type = args.data_type.lower()
+
+    if data_type == "mindrecord":
+        data_path = os.path.join(args.data_path, args.image_ids)
+        dataset = de.MindDataset(data_path,
+                                 columns_list=args.input_columns,
+                                 num_shards=args.device_num,
+                                 shard_id=args.local_rank,
+                                 shuffle=args.shuffle,
+                                 num_parallel_workers=args.num_workers,
+                                 num_samples=args.num_samples)
+
+    elif data_type == "custom":
+        dataset = de.GeneratorDataset(source=ImageLoader(args.image_ids, data_dir=args.data_path),
+                                      column_names=args.input_columns,
+                                      num_shards=args.device_num,
+                                      shard_id=args.local_rank,
+                                      shuffle=args.shuffle,
+                                      num_parallel_workers=args.num_workers,
+                                      python_multiprocessing=args.python_multiprocessing)
+    else:
+        raise NotImplementedError("Only support mindrecord or custom dataset, but got {}".format(data_type))
     return dataset
 
 
 def build_transforms(args):
     """build transforms"""
+    data_type = args.data_type.lower()
+
     trans = [
-        C.RandomResizedCrop(
+        P.RandomResizedCrop(
             args.image_size,
             scale=(args.crop_min, 1.0),
+            ratio=(3. / 4., 4. / 3.),
             interpolation=Inter.BICUBIC),
-        C.RandomHorizontalFlip(prob=args.prop),
-        C.Normalize(mean=MEAN, std=STD),
-        C.HWC2CHW(),
+        P.RandomHorizontalFlip(prob=args.prop),
+        P.ToTensor(),
+        P.Normalize(mean=MEAN, std=STD),
     ]
-    trans = Compose(trans)
+
+    if data_type == "mindrecord":
+        trans.insert(0, P.Decode())
+    elif data_type == "custom":
+        trans.insert(0, P.ToPIL())
     return trans
 
 

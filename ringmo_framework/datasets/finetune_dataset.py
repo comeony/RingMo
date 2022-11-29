@@ -21,11 +21,9 @@ from io import BytesIO
 from PIL import Image
 import numpy as np
 
-from mindspore import context
 import mindspore.dataset as de
 import mindspore.common.dtype as mstype
 from mindspore.dataset.vision.utils import Inter
-import mindspore.dataset.vision.c_transforms as C
 import mindspore.dataset.vision.py_transforms as P
 import mindspore.dataset.transforms.c_transforms as C2
 
@@ -42,20 +40,24 @@ STD = [0.229, 0.224, 0.225]
 
 def build_dataset(config, is_train=True):
     """build dataset"""
-    is_data_parallel = context.get_auto_parallel_context(
-        "parallel_mode") == context.ParallelMode.DATA_PARALLEL
-    full_batch = context.get_auto_parallel_context("full_batch")
+    data_type = config.data_type.lower()
     if is_train:
-        if is_data_parallel or not full_batch:
+        if data_type == "mindrecord":
+            train_path = os.path.join(config.train_path, config.train_ids)
+            ds = de.MindDataset(train_path,
+                                columns_list=config.input_columns,
+                                shuffle=config.shuffle,
+                                num_parallel_workers=config.num_workers,
+                                num_shards=config.device_num,
+                                shard_id=config.local_rank)
+        elif data_type == "custom":
             ds = de.ImageFolderDataset(config.train_path,
-                                       num_parallel_workers=config.num_workers,
                                        shuffle=config.shuffle,
+                                       num_parallel_workers=config.num_workers,
                                        num_shards=config.device_num,
                                        shard_id=config.local_rank)
-        elif full_batch:
-            ds = de.ImageFolderDataset(config.train_path,
-                                       num_parallel_workers=config.num_workers,
-                                       shuffle=False)
+        else:
+            raise NotImplementedError("Only support mindrecord or custom dataset, but got {}".format(data_type))
     else:
         batch_per_step = config.batch_size * config.device_num
         if batch_per_step < config.samples_num:
@@ -66,49 +68,50 @@ def build_dataset(config, is_train=True):
         else:
             num_padded = batch_per_step - config.samples_num
         print("num_padded", num_padded)
-        if is_data_parallel or not full_batch:
-            if num_padded != 0:
-                # padded_with_decode
-                white_io = BytesIO()
-                Image.new(
-                    'RGB', (config.image_size, config.image_size), (255, 255, 255)).save(white_io, 'JPEG')
-                padded_sample = {
-                    'image': np.array(bytearray(white_io.getvalue()), dtype='uint8'),
-                    'label': np.array(-1, np.int32)
-                }
-                sample = [padded_sample for x in range(num_padded)]
-                ds_pad = de.PaddedDataset(sample)
-                ds_imagefolder = de.ImageFolderDataset(config.eval_path, num_parallel_workers=config.num_workers)
-                ds = ds_pad + ds_imagefolder
-                distribute_sampler = de.DistributedSampler(num_shards=config.device_num,
-                                                           shard_id=config.local_rank,
-                                                           shuffle=False,
-                                                           num_samples=None)
-                ds.use_sampler(distribute_sampler)
+        if num_padded != 0:
+            # padded_with_decode
+            white_io = BytesIO()
+            Image.new(
+                'RGB', (config.image_size, config.image_size), (255, 255, 255)).save(white_io, 'JPEG')
+            padded_sample = {
+                'image': np.array(bytearray(white_io.getvalue()), dtype='uint8'),
+                'label': np.array(-1, np.int32)
+            }
+            sample = [padded_sample for x in range(num_padded)]
+            ds_pad = de.PaddedDataset(sample)
+            if data_type == "mindrecord":
+                eval_path = os.path.join(config.eval_path, config.eval_ids)
+                ds_imagefolder = de.MindDataset(eval_path,
+                                                columns_list=config.input_columns,
+                                                shuffle=False,
+                                                num_parallel_workers=config.num_workers)
+            elif data_type == "custom":
+                ds_imagefolder = de.ImageFolderDataset(config.eval_path,
+                                                       num_parallel_workers=config.num_workers)
             else:
+                raise NotImplementedError("Only support mindrecord or custom dataset, but got {}".format(data_type))
+            ds = ds_pad + ds_imagefolder
+            distribute_sampler = de.DistributedSampler(shuffle=False,
+                                                       num_shards=config.device_num,
+                                                       shard_id=config.local_rank)
+            ds.use_sampler(distribute_sampler)
+        else:
+            if data_type == "mindrecord":
+                eval_path = os.path.join(config.eval_path, config.eval_ids)
+                ds = de.MindDataset(eval_path,
+                                    columns_list=config.input_columns,
+                                    shuffle=False,
+                                    num_parallel_workers=config.num_workers,
+                                    num_shards=config.device_num,
+                                    shard_id=config.local_rank)
+            elif data_type == "custom":
                 ds = de.ImageFolderDataset(config.eval_path,
                                            num_parallel_workers=config.num_workers,
                                            shuffle=False,
                                            num_shards=config.device_num,
                                            shard_id=config.local_rank)
-        elif full_batch:
-            if num_padded != 0:
-                # padded_with_decode
-                white_io = BytesIO()
-                Image.new(
-                    'RGB', (config.model.image_size, config.image_size), (255, 255, 255)).save(white_io, 'JPEG')
-                padded_sample = {
-                    'image': np.array(bytearray(white_io.getvalue()), dtype='uint8'),
-                    'label': np.array(-1, np.int32)
-                }
-                sample = [padded_sample for x in range(num_padded)]
-                ds_pad = de.PaddedDataset(sample)
-                ds_imagefolder = de.ImageFolderDataset(config.eval_path, num_parallel_workers=config.num_workers)
-                ds = ds_pad + ds_imagefolder
             else:
-                ds = de.ImageFolderDataset(config.eval_path, num_parallel_workers=config.num_workers, shuffle=False)
-        else:
-            raise ValueError("if now is data context mode, full batch should be False.")
+                raise NotImplementedError("Only support mindrecord or custom dataset, but got {}".format(data_type))
     return ds
 
 
@@ -122,13 +125,12 @@ def build_transforms(config, interpolation, is_train=True):
         assert config.auto_augment.startswith('rand')
         aa_params['interpolation'] = interpolation
         trans = [
-            C.Decode(),
-            C.RandomResizedCrop(config.image_size,
+            P.Decode(),
+            P.RandomResizedCrop(config.image_size,
                                 scale=(config.crop_min, 1.0),
                                 ratio=(3. / 4., 4. / 3.),
                                 interpolation=interpolation),
-            C.RandomHorizontalFlip(prob=config.hflip),
-            P.ToPIL()
+            P.RandomHorizontalFlip(prob=config.hflip),
         ]
         if config.auto_augment is None:
             trans += [P.RandomColorAdjust(brightness=config.color_jitter,
@@ -146,17 +148,15 @@ def build_transforms(config, interpolation, is_train=True):
 
         if config.arch == "simmim":
             if not config.image_size > 32:
-                trans[1] = C.RandomCrop(size=config.image_size, padding=4)
+                trans[1] = P.RandomCrop(size=config.image_size, padding=4)
 
     else:
-        mean = [0.485 * 255, 0.456 * 255, 0.406 * 255]
-        std = [0.229 * 255, 0.224 * 255, 0.225 * 255]
         trans = [
-            C.Decode(),
-            C.Resize(int(256 / 224 * config.image_size), interpolation=interpolation),
-            C.CenterCrop(config.image_size),
-            C.Normalize(mean=mean, std=std),
-            C.HWC2CHW()
+            P.Decode(),
+            P.Resize(int(256 / 224 * config.image_size), interpolation=interpolation),
+            P.CenterCrop(config.image_size),
+            P.ToTensor(),
+            P.Normalize(mean=MEAN, std=STD),
         ]
 
     return trans

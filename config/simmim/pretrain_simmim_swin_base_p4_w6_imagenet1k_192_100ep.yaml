@@ -1,0 +1,59 @@
+base_config: [
+  '../base/context/default_mode.yaml',
+  '../base/datasets/pretrain_dataset.yaml',
+  '../base/models/simmim_swin_base_p4_w6.yaml',
+  '../base/schedules/default_schedule.yaml',
+  '../base/runner/runner.yaml',
+  '../base/modelarts/aicc.yaml',
+  '../base/__base__.yaml']
+
+arch: "simmim"
+seed: 2022
+use_parallel: True
+profile: False
+auto_tune: True  # dataset performance
+filepath_prefix: "./autotune"
+autotune_per_step: 10
+
+model:
+  patch_type: 'conv'
+
+pretrain_dataset:
+  data_type: "custom"
+  data_path: "/data/imageNet-1k"
+  image_ids: "train_ids.json"
+  input_columns: [ "image" ]
+  output_columns: [ "image", "mask" ]
+  column_order: [ "image", "mask" ]
+
+train_config:
+  epoch: 100
+  batch_size: 128
+  image_size: 192
+  per_epoch_size: 0
+
+# optimizer
+optimizer:
+  optim_name: "AdamW"
+  beta1: 0.9
+  beta2: 0.999
+  eps: 0.00000001 # 1e-8
+  weight_decay: 0.05
+
+# lr sechdule
+lr_schedule:
+  lr_type: "warmup_cosine_decay_simmim"
+  base_lr: 0.0002
+  min_lr: 0.00001
+  warmup_lr: 0.000001
+  warmup_epochs: 10
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "pretrain-simmim-swin-base-p4-w6-192"
+
+aicc_config:
+  obs_path: "Input your obs path if code is running on modelarts else invalid."
+  upload_frequence: 1
+  keep_last: False
