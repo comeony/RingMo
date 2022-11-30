@@ -348,7 +348,9 @@ class WindowAttention(nn.Cell):
         attn = self.add_4d(attn, self.relative_position_bias())
 
         if mask is not None:
-            nw = mask.shape[1]
+            nw, ws2, _ = mask.shape
+            # mask: [64, 49, 49] ==> [1, 64, 1, 49, 49]
+            mask = self.reshape(mask, (1, nw, 1, ws2, ws2))
             attn = self.reshape(attn, (b // nw, nw, self.num_heads, seq, seq))
             attn = self.add_5d(attn, mask)
             attn = self.reshape(attn, (-1, self.num_heads, seq, seq))

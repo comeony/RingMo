@@ -1,0 +1,66 @@
+base_config: [
+  '../base/context/default_mode.yaml',
+  '../base/datasets/finetune_dataset.yaml',
+  '../base/models/swin_base_p4_w7.yaml',
+  '../base/schedules/default_schedule.yaml',
+  '../base/runner/runner.yaml',
+  '../base/modelarts/aicc.yaml',
+  '../base/__base__.yaml']
+
+arch: "simmim"
+use_parallel: True
+profile: False
+auto_tune: False  # dataset performance
+filepath_prefix: "./autotune"
+autotune_per_step: 10
+
+model:
+  patch_type: 'conv'
+
+finetune_dataset:
+  data_type: "custom"
+  train_path: "/data/imageNet-1k/train"
+  eval_path: "/data/imageNet-1k/val"
+  eval_interval: 1
+  eval_offset: -1
+  input_columns: [ "image", "label" ]
+  output_columns: [ "image", "label" ]
+  column_order: [ "image", "label" ]
+  samples_num: 50000 # 50000 for imagenet, 25200 for nwpu， 5000 for aid_test.
+
+train_config:
+  epoch: 100
+  batch_size: 128
+  image_size: 224
+  per_epoch_size: 0
+  num_classes: 1000
+  resume_ckpt: "/home/user/ckpt/simmim_pretrain__swin_base__img192_window6__100ep.ckpt"  # use absolute path
+
+loss_type: "soft_ce"
+
+# optimizer
+optimizer:
+  optim_name: "AdamW"
+  beta1: 0.9
+  beta2: 0.999
+  eps: 0.00000001 # 1e-8
+  weight_decay: 0.05
+  layer_decay: 0.9
+
+# lr sechdule
+lr_schedule:
+  lr_type: "warmup_cosine_decay_simmim"
+  base_lr: 0.00125
+  min_lr: 0.00000025
+  warmup_lr: 0.00000025
+  warmup_epochs: 20
+
+callback:
+    # ckpt callback
+    ckpt_config:
+        prefix: "finetune-simmim-swin-base-p4-w7-224"
+
+aicc_config:
+  obs_path: "Input your obs path if code is running on modelarts else invalid."
+  upload_frequence: 1
+  keep_last: False
