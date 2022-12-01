@@ -57,7 +57,7 @@ exit 1
 fi
 
 ulimit -u unlimited
-export RANK_SIZE=$(($END_DEVICE - $START_DEVICE + 1))
+export RANK_SIZE=$(($END_DEVICE - $START_DEVICE))
 export RANK_TABLE_FILE=$PATH1
 
 for((i=${START_DEVICE}; i<${END_DEVICE}; i++))

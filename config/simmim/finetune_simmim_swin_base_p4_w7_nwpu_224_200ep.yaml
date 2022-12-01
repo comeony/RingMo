@@ -10,7 +10,7 @@ base_config: [
 arch: "simmim"
 use_parallel: True
 profile: False
-auto_tune: True  # dataset performance
+auto_tune: False  # dataset performance
 filepath_prefix: "./autotune"
 autotune_per_step: 10
 
