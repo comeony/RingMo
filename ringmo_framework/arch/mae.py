@@ -217,8 +217,8 @@ class Mae(nn.Cell):
         """construct of mae"""
         _, c, h, w = imgs.shape
         input_image = self.stride_slice4d(imgs, (0, 0, 0, 0), (1, c, h, w), (1, 1, 1, 1))
-        # self.images_summary("input images", input_image)
-        self.images_summary("input images", input_image.transpose(0, 2, 3, 1))
+        self.images_summary("input images", input_image)
+        # self.images_summary("input images", input_image.transpose(0, 2, 3, 1))
 
         # tokens encoder
         mask = self.gather1(mask, 1, ids_restore)
