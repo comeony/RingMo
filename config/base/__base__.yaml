@@ -1,6 +1,8 @@
 seed: 2022
 use_parallel: True
 profile: False
+profile_start_step: 1
+profile_end_step: 10
 
 # performance optimization
 auto_tune: False  # dataset performance
