@@ -18,6 +18,7 @@
 import numpy as np
 
 from mindspore import nn, Parameter, Tensor
+from mindspore import numpy
 import mindspore.common.dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
@@ -57,10 +58,12 @@ class Roll(nn.Cell):
             dp = parallel_config.data_parallel  # pylint: disable=W0612
         else:
             dp = 1  # pylint: disable=W0612
-        self.roll = nn.Roll(to_2tuple(shift_size), shift_axis)
+        # nn.Roll is slow
+        self.tuple_shift_size = to_2tuple(shift_size)
+        self.shift_axis = shift_axis
 
     def construct(self, x):
-        x = self.roll(x)
+        x = numpy.roll(x, self.tuple_shift_size, self.shift_axis)
         return x
 
 
