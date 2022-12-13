@@ -31,7 +31,7 @@ _assign_add = P.AssignAdd()
 @_ema_op.register("Tensor", "Tensor", "Tensor")
 def _ema_weights(factor, ema_weight, weight):
     """Apply grad sum to cumulative gradient."""
-    return _assign_add(ema_weight, ema_weight * factor + weight * (1 - factor))
+    return _assign(ema_weight, ema_weight * factor + weight * (1 - factor))
 
 
 class EMACell(nn.Cell):
