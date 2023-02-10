@@ -129,3 +129,25 @@ class DropPath(nn.Cell):
         out = self.drop(mask)
         out = self.mul(out, x)
         return out
+
+
+class VitDropPath(nn.Cell):
+    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
+
+    def __init__(self, drop_prob):
+        super(VitDropPath, self).__init__()
+        self.drop = Dropout(keep_prob=1 - drop_prob)
+        self.mask = Tensor(np.ones(1,), dtype=mstype.float32)
+        self.tile = P.Tile()
+        self.mul = P.Mul()
+
+    def construct(self, x):
+        if not self.training:
+            return x
+        mask = self.tile(self.mask, (x.shape[0],) + (1,) * (x.ndim - 1))
+        out = self.drop(mask)
+        out = self.mul(out, x)
+        return out
+
+    def shard(self, strategy):
+        self.mul.shard(strategy)
