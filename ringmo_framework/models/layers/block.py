@@ -25,7 +25,7 @@ from mindspore.ops import functional as F
 from mindspore.nn.transformer.moe import default_moe_config
 from mindspore.nn.transformer.op_parallel_config import default_dpmp_config
 
-from .layers import LayerNorm, Dropout, DropPath, Identity
+from .layers import LayerNorm, DropPath, Identity, VitDropPath
 from .attention import Attention, WindowAttention
 from .mlp import MLP
 from .utils import _ntuple
@@ -344,9 +344,9 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
             self.gamma_1, self.gamma_2 = None, None
 
         self.mul_gamma = P.Mul().shard(((parallel_config.data_parallel, 1), (1,)))
-        self.drop_path = Dropout(1 - hidden_dropout_rate)
+        self.drop_path = VitDropPath(hidden_dropout_rate)
         self.drop_path.shard(((parallel_config.data_parallel, 1),))
-        self.drop_path3d = Dropout(1 - hidden_dropout_rate)
+        self.drop_path3d = VitDropPath(hidden_dropout_rate)
         self.drop_path3d.shard(((parallel_config.data_parallel, 1, 1),))
         self.mul = P.Mul().shard(((parallel_config.data_parallel, 1, 1), (parallel_config.data_parallel, 1, 1)))
         self.reshape = P.Reshape()
@@ -367,7 +367,12 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
         if self.gamma_1 is not None:
             attention = self.mul_gamma(attention, self.gamma_1)
 
-        attention = self.drop_path(attention)
+        if len(x_shape) == 3:
+            attention = P.Reshape()(attention, x_shape)
+            attention = self.drop_path3d(attention)
+            attention = P.Reshape()(attention, (-1, x_shape[-1]))
+        else:
+            attention = self.drop_path(attention)
 
         # For post-layernorm the inputs for residual path are output of self-attention and output of layernorm
         if self.post_layernorm_residual:
@@ -384,19 +389,19 @@ class Block(nn.transformer.transformer.TransformerEncoderLayer):
         if self.gamma_2 is not None:
             mlp_logit = self.mul_gamma(mlp_logit, self.gamma_2)
 
-        mlp_logit = self.drop_path(mlp_logit)
-
         # if shape is 3d, we reshape the inputs of the add
         if len(x_shape) == 3:
             output_x = P.Reshape()(output_x, x_shape)
             mlp_logit = P.Reshape()(mlp_logit, x_shape)
             x = P.Reshape()(x, x_shape)
 
+            mlp_logit = self.drop_path3d(mlp_logit)
             if self.post_layernorm_residual:
                 output = self.add_3d(output_x, mlp_logit)
             else:
                 output = self.add_3d(x, mlp_logit)
         else:
+            mlp_logit = self.drop_path(mlp_logit)
             if self.post_layernorm_residual:
                 output = self.add(output_x, mlp_logit)
             else:

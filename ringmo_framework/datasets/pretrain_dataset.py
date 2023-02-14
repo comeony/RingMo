@@ -22,14 +22,15 @@ import json
 from PIL import Image
 
 import mindspore.dataset as de
+from mindspore.dataset.transforms.c_transforms import Compose
 from mindspore.dataset.vision import Inter
-import mindspore.dataset.vision.py_transforms as P
+import mindspore.dataset.vision.c_transforms as C
 
 from ringmo_framework.datasets.utils import _check_pretrain_dataset_config
 from ringmo_framework.datasets.mask.mask_policy import MaskPolicyForSim, MaskPolicyForMae, MaskPolicyForPIMask
 
-MEAN = [0.485, 0.456, 0.406]
-STD = [0.229, 0.224, 0.225]
+MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
+STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
 
 
 class ImageLoader:
@@ -89,20 +90,20 @@ def build_transforms(args):
     data_type = args.data_type.lower()
 
     trans = [
-        P.RandomResizedCrop(
+        C.RandomResizedCrop(
             args.image_size,
             scale=(args.crop_min, 1.0),
             ratio=(3. / 4., 4. / 3.),
-            interpolation=Inter.BICUBIC),
-        P.RandomHorizontalFlip(prob=args.prop),
-        P.ToTensor(),
-        P.Normalize(mean=MEAN, std=STD),
+            interpolation=Inter.PILCUBIC),
+        C.RandomHorizontalFlip(prob=args.prop),
+        C.Normalize(mean=MEAN, std=STD),
+        C.HWC2CHW(),
     ]
 
     if data_type == "mindrecord":
-        trans.insert(0, P.Decode())
-    elif data_type == "custom":
-        trans.insert(0, P.ToPIL())
+        trans.insert(0, C.Decode())
+
+    trans = Compose(trans)
     return trans
 
 
